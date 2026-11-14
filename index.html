@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM Wiki · 研究簡報與知識庫導覽門戶</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+  <style>
+    :root {
+      --primary-blue: #2563EB;
+      --deep-navy: #0F172A;
+      --ice-blue-card: #F4F8FF;
+      --ice-blue-border: #DBEAFE;
+    }
+
+    body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .bg-dot-grid {
+      background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    .ice-card {
+      background-color: #F4F8FF;
+      border: 1px solid #DBEAFE;
+      border-radius: 16px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ice-card:hover {
+      border-color: #93C5FD;
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.08), 0 4px 10px -2px rgba(37, 99, 235, 0.04);
+      transform: translateY(-2px);
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+</head>
+<body class="bg-dot-grid min-h-screen antialiased flex flex-col justify-between">
+
+  <!-- Main Container -->
+  <div class="max-w-6xl mx-auto px-6 py-10 w-full space-y-8">
+
+    <!-- Top Navigation & Status -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200/80">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2.5">
+          <span class="w-3 h-3 rounded-full bg-blue-600 animate-pulse"></span>
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-600 mono">LLM WIKI · PRESENTATION HUB</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+          研究簡報與知識庫導覽門戶
+        </h1>
+        <p class="text-xs md:text-sm text-slate-500">
+          Karpathy LLM Wiki 架構 · 冰川極簡藍白風格（Glacial Tech Minimal）單檔自包含簡報庫
+        </p>
+      </div>
+
+      <!-- Quick Action Badges -->
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="index.md" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 hover:text-blue-600 text-xs font-medium text-slate-700 transition flex items-center gap-1.5 shadow-2xs">
+          <span>📖</span>
+          <span>Wiki 全域索引 (index.md)</span>
+        </a>
+        <a href="log.md" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 hover:text-blue-600 text-xs font-medium text-slate-700 transition flex items-center gap-1.5 shadow-2xs">
+          <span>📜</span>
+          <span>操作日誌 (log.md)</span>
+        </a>
+        <a href="AGENTS.md" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 hover:text-blue-600 text-xs font-medium text-slate-700 transition flex items-center gap-1.5 shadow-2xs">
+          <span>⚙️</span>
+          <span>維護規範 (AGENTS.md)</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Knowledge Base Stats Bento -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        <div class="text-[11px] font-semibold uppercase text-slate-400 mono">HTML 簡報總數</div>
+        <div class="text-2xl font-extrabold text-blue-600 mono mt-1" id="totalSlidesCount">10 份</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">16:9 · 內建 KaTeX · 支援列印</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        <div class="text-[11px] font-semibold uppercase text-slate-400 mono">Wiki 來源論文</div>
+        <div class="text-2xl font-extrabold text-slate-900 mono mt-1">16 篇</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">4D 雷達 · 多模態 · 損失函數 · 優化</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        <div class="text-[11px] font-semibold uppercase text-slate-400 mono">概念與實體頁面</div>
+        <div class="text-2xl font-extrabold text-slate-900 mono mt-1">16 頁</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">9 核心概念 · 7 代表實體</div>
+      </div>
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+        <div class="text-[11px] font-semibold uppercase text-slate-400 mono">專題橫向比較</div>
+        <div class="text-2xl font-extrabold text-slate-900 mono mt-1">3 篇</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">監督 vs 融合 · 損失演進 · 張量 vs 點雲</div>
+      </div>
+    </section>
+
+    <!-- Search & Filter Controls -->
+    <section class="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="relative w-full md:w-96">
+        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 text-xs">🔍</span>
+        <input type="text" id="searchInput" oninput="filterCards()" placeholder="搜尋簡報標題、主題關鍵字或技術標籤..." 
+          class="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-slate-50 border border-slate-200 focus:outline-none focus:border-blue-500 focus:bg-white transition" />
+      </div>
+
+      <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0" id="filterTags">
+        <button onclick="setFilter('all')" class="filter-btn active px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white cursor-pointer transition">全部簡報</button>
+        <button onclick="setFilter('thesis')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition">碩士論文系列</button>
+        <button onclick="setFilter('weak-supervision')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition">弱監督與教師</button>
+        <button onclick="setFilter('network')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition">特徵與網路</button>
+        <button onclick="setFilter('suppression')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition">功率抑制與選模</button>
+        <button onclick="setFilter('diagnostics')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition">大車衰退與診斷</button>
+        <button onclick="setFilter('enhancements')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition">演算法深入改良</button>
+        <button onclick="setFilter('experiments')" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer transition">補充實驗清單</button>
+      </div>
+    </section>
+
+    <!-- Presentation Cards Grid -->
+    <main class="space-y-4" id="cardsContainer">
+
+      <!-- Flagship Presentation: Master Thesis Progress & Future Roadmap -->
+      <article class="presentation-card bg-gradient-to-r from-blue-50/80 via-white to-blue-50/50 border-2 border-blue-400/80 rounded-2xl p-6 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis 4d-radar weak-supervision soft-denoising dataset"
+        data-title="碩士論文全貌與進度報告 光達輔助弱監督之四維雷達可靠度估計與功率抑制 張喬筑 莊子毅">
+        
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-bold mono">24 SLIDES · 旗艦論文總覽</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">2026-11-14</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold">張喬筑 碩士論文 (NYCU 2027)</span>
+          </div>
+
+          <h2 class="text-xl md:text-2xl font-black text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-thesis-progress-and-future-work.html">
+              光達輔助弱監督之四維雷達可靠度估計與功率抑制（碩士論文進度與全景報告）
+            </a>
+          </h2>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            全篇五大章節完整串連：軟式去噪定位、三態弱監督教師、局部 MLP 原生特徵網路、115 組三種子開發結果、破解俯視 1,759 個負代理的 3D 側視核對、21.9:1 樣本失衡與大車退步機理，以及 Version08 平台式映射與表 4-6 定稿最小證據鏈！
+          </p>
+
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-blue-800 text-[11px] font-semibold mono">#Master-Thesis</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Full-Deck</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#115-Configs</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#RTNH-AP11</span>
+          </div>
+        </div>
+
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-thesis-progress-and-future-work.html" 
+            class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm hover:shadow transition flex items-center space-x-1.5">
+            <span>開啟 24 頁全景簡報</span>
+            <span>→</span>
+          </a>
+          <a href="outputs/notes/2026-11-14-thesis-progress-and-future-work.md" 
+            class="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-medium transition">
+            閱讀研究筆記 (.md)
+          </a>
+        </div>
+      </article>
+
+      <!-- Topic Deck 1: Weak Supervision Teacher -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis weak-supervision teacher geometry"
+        data-title="專題一 物件感知弱監督教師與幾何標籤生成 雙層空間緩衝區 3D 側視核對">
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">8 SLIDES · 專題 01</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium mono">2026-11-14</span>
+            <span class="text-xs text-slate-500 font-semibold">· 第三章 3.2-3.3 節 & 第四章 4.4 節</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-weak-supervision-teacher.html">
+              專題一：物件感知弱監督教師與幾何標籤生成
+            </a>
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            深入剖析跨模態物理不對稱性；建立核心區（+0.2m）與保護區（+0.8m）雙層幾何防線；推導距離自適應雷達證據公式；確立三態代理標籤（可靠正例、可靠負例、不確定區）；並詳解場景 3 幀 00031 側視 3D 框核對，徹底破除俯視 1,759 個負代理的假象！
+          </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Dual-Zone-Buffer</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Tri-State-Labels</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#3D-Box-Audit</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Range-Adaptive</span>
+          </div>
+        </div>
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-weak-supervision-teacher.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">開啟專題簡報 →</a>
+          <a href="outputs/notes/2026-11-14-weak-supervision-teacher.md" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-medium transition">專題筆記 (.md)</a>
+        </div>
+      </article>
+
+      <!-- Topic Deck 2: Radar Features and Network -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis network features doppler mlp"
+        data-title="專題二 雷達原生特徵工程與局部可靠度網路 14D中心 10D鄰域 移除都卜勒 68.46%">
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">8 SLIDES · 專題 02</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium mono">2026-11-14</span>
+            <span class="text-xs text-slate-500 font-semibold">· 第三章 3.4 節 & 第四章 4.2 節</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-radar-features-and-network.html">
+              專題二：雷達原生特徵工程與局部可靠度網路
+            </a>
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            推論端 100% 依賴純雷達原生特徵：中心 14 維（空間、強度對數、百分位排序、密度）與局部鄰域 10 維（幾何差與都卜勒差）；輕量化雙分支 MLP + 通道最大值池化；並深入解密表 4-1 中「移除顯式都卜勒特徵使代理 AP 暴增至 68.46%」的自車運動干擾機理！
+          </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#14D-Center</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#10D-Neighbor</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Doppler-Drop-Mystery</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Soft-BCE</span>
+          </div>
+        </div>
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-radar-features-and-network.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">開啟專題簡報 →</a>
+          <a href="outputs/notes/2026-11-14-radar-features-and-network.md" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-medium transition">專題筆記 (.md)</a>
+        </div>
+      </article>
+
+      <!-- Topic Deck 3: Power Suppression and Selection -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis suppression selection objective-j hard-threshold"
+        data-title="專題三 功率抑制映射機制與約束式選模 軟式W065 硬式歸零 平台式曲線 綜合目標J">
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">8 SLIDES · 專題 03</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium mono">2026-11-14</span>
+            <span class="text-xs text-slate-500 font-semibold">· 第三章 3.5/3.7 節 & 第四章 4.3 節</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-power-suppression-and-selection.html">
+              專題三：功率抑制映射機制與約束式選模
+            </a>
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            嚴格原位調整原則（保持 150,000 點數與座標）；比較連續軟式加權（W065）、硬式門檻歸零與 Version08 滿額平台式曲線；定義約束式選模目標 $J$ 與三道不可逾越之死線；並在 29,736 種組合搜尋中，客觀剖析焦點損失 + 硬式 0.1 暫居第一背後殘留 73.6% 背景的深刻取捨。
+          </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#In-place-Suppression</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Platform-Curve</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Objective-J</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#29736-Search</span>
+          </div>
+        </div>
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-power-suppression-and-selection.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">開啟專題簡報 →</a>
+          <a href="outputs/notes/2026-11-14-power-suppression-and-selection.md" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-medium transition">專題筆記 (.md)</a>
+        </div>
+      </article>
+
+      <!-- Topic Deck 4: Large-Vehicle Diagnostics -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis diagnostics large-vehicle imbalance rtnh"
+        data-title="專題四 大型車遠距衰退、失敗診斷與四大競爭假說 21.9比1 82.68%衰退 轎車升大車跌">
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">8 SLIDES · 專題 04</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium mono">2026-11-14</span>
+            <span class="text-xs text-slate-500 font-semibold">· 第四章 4.5 節 & 4.6 節</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-large-vehicle-diagnostics.html">
+              專題四：大型車遠距衰退、失敗診斷與四大競爭假說
+            </a>
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            直擊「去噪提升轎車但損害大車」核心痛點：訓練集 5,690 轎車 vs. 260 大車（21.9:1）極端長尾；60–80m 缺乏光達支持大車點保留率暴跌至 82.68%；歷史 RTNH 先導結果（轎車 +8.76% vs 大車 -4.40%）；構建資料、遮蔽、映射與偵測器四大競爭假說及逐物件配對檢驗法！
+          </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Class-Imbalance-21.9</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Distance-Decay-82.68</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Four-Hypotheses</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Matched-Pairs</span>
+          </div>
+        </div>
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-large-vehicle-diagnostics.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">開啟專題簡報 →</a>
+          <a href="outputs/notes/2026-11-14-large-vehicle-diagnostics.md" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-medium transition">專題筆記 (.md)</a>
+        </div>
+      </article>
+
+      <!-- Topic Deck 5: Thesis Limitations & Evidence Chain -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis limitations roadmap evidence-chain version08"
+        data-title="專題五 研究限制、演算法改良與定稿最小證據鏈 7大限制 Version08藍圖 表4-6優先順序">
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">8 SLIDES · 專題 05</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium mono">2026-11-14</span>
+            <span class="text-xs text-slate-500 font-semibold">· 第四章 4.7 節 & 第五章 5.1-5.3 節</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-thesis-limitations-and-evidence-chain.html">
+              專題五：研究限制、演算法改良與定稿最小證據鏈
+            </a>
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            確立目前快照下站得住腳的三大結論；公開誠實審視 7 大研究限制（幾何擬合、單一場景偏誤、未刪點、顯存門檻）；擘劃 Version08 平台式滿額映射、有界類別/距離加權與快取蒸餾藍圖；並依表 4-6 建立定稿六大優先順序與 15 場景盲測切分協定，完備碩士口試答辯！
+          </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Seven-Limitations</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Version08-Roadmap</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Evidence-Chain</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#15-Scenes-Protocol</span>
+          </div>
+        </div>
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-thesis-limitations-and-evidence-chain.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">開啟專題簡報 →</a>
+          <a href="outputs/notes/2026-11-14-thesis-limitations-and-evidence-chain.md" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-medium transition">專題筆記 (.md)</a>
+        </div>
+      </article>
+
+      <!-- Topic Deck 6: Algorithmic Enhancements Guide -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis enhancements eql-v2 3d-diou vod-imu platform-curve distillation"
+        data-title="專題六 如何進一步做得更好 演算法深入改良與前沿架構指引 EQL v2 3D-DIoU IMU都卜勒 平台曲線">
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">8 SLIDES · 專題 06</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold mono">NEW · 演算法指引</span>
+            <span class="text-xs text-slate-500 font-semibold">· 融合 CVPR / AAAI / IEEE TVT / IEEE RA-L 頂級文獻</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-algorithmic-enhancements-guide.html">
+              專題六：如何進一步做得更好——演算法深入改良與前沿架構指引
+            </a>
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            全面診斷 Version06 邊界瓶頸，跳脫盲目調參；引入 <code>EQL v2 (CVPR 2021)</code> 動態梯度門控消除 21.9:1 長尾壓制、<code>3D-DIoU (AAAI 2020)</code> 三維中心空間回歸約束鎖定高度漂移、<code>VoD (IEEE RA-L 2022)</code> 車載 IMU 投影消除路側偽動態，以及 <code>Version08 平台滿額映射曲線</code> 與體素連續性先驗！
+          </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Version08-Platform</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#EQL-v2-Gradient</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#3D-DIoU-Loss</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#VoD-IMU-Doppler</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Cached-Distillation</span>
+          </div>
+        </div>
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-algorithmic-enhancements-guide.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">開啟專題簡報 →</a>
+          <a href="outputs/notes/2026-11-14-algorithmic-enhancements-guide.md" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-medium transition">專題筆記 (.md)</a>
+        </div>
+      </article>
+
+      <!-- Topic Deck 7: Supplementary Experiments Plan -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="thesis experiments table-4-6 scene-split matched-pairs benchmark-table distance-matrix"
+        data-title="專題七 應該要補充的實驗 完整實證矩陣、消融清單與評測驗證方案 Table 4-6 盲測協議 8大方法對比">
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">8 SLIDES · 專題 07</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-bold mono">NEW · 實證消融清單</span>
+            <span class="text-xs text-slate-500 font-semibold">· 學位論文口試防辯實證閉環</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-14-supplementary-experiments-plan.html">
+              專題七：應該要補充的實驗——完整實證矩陣、消融清單與評測驗證方案
+            </a>
+          </h2>
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            全面回應學位答辯委員質疑；落地 Table 4-6 六大優先級實驗（40ep 收斂、平台曲線、教師消融、下游泛化、EQL、IMU）、建立 15 序列嚴格無洩漏盲測協議（十字路口、夜雨、高速）、物件級真值匹配（TP/LE/FN/FP）誤差歸因診斷，以及 8 大方法橫向對比大表！
+          </p>
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Table-4-6-Matrix</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#15-Sequences-Blind</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Matched-Pair-Auditing</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Soft-vs-Hard-Table</span>
+            <span class="px-2 py-0.5 rounded bg-white border border-blue-200 text-slate-700 text-[11px] mono">#Distance-Binned-AP</span>
+          </div>
+        </div>
+        <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0 border-t md:border-t-0 pt-4 md:pt-0 border-slate-100">
+          <a href="outputs/slides/2026-11-14-supplementary-experiments-plan.html" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition">開啟專題簡報 →</a>
+          <a href="outputs/notes/2026-11-14-supplementary-experiments-plan.md" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 text-[11px] font-medium transition">專題筆記 (.md)</a>
+        </div>
+      </article>
+
+      <!-- Presentation 1: Radar Reliability & Power Suppression -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="4d-radar weak-supervision soft-denoising qfl corenet radardistill"
+        data-title="光達輔助弱監督之四維雷達可靠度估計與功率抑制 軟式去噪">
+        
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">10 SLIDES</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium mono">2026-11-13</span>
+            <span class="text-xs text-slate-400">· 點雲去噪與特徵調變</span>
+          </div>
+
+          <h2 class="text-xl font-extrabold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-13-radar-reliability-power-suppression.html">
+              光達輔助弱監督之四維雷達可靠度估計與功率抑制（軟式去噪）
+            </a>
+          </h2>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            從粗暴幾何截斷走向連續特徵與功率抑制：解構硬式去噪對稀疏小目標的致命傷，整合 CORENet 體素連續信心、RadarDistill BEV 軟蒸餾、以及 Generalized Focal Loss (QFL) 連續無偏監督，並引用 Kung et al. (RA-L 2022) 剖析光達弱監督中的負面監督物理陷阱。
+          </p>
+
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#Soft-Denoising</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#Weak-Supervision</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#CORENet</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#RadarDistill</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#QFL</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row md:flex-col gap-2 min-w-[200px] shrink-0">
+          <a href="outputs/slides/2026-11-13-radar-reliability-power-suppression.html" target="_blank"
+            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold text-center transition flex items-center justify-center gap-2 shadow-xs cursor-pointer">
+            <span>🖥️ 開啟全螢幕簡報</span>
+          </a>
+          <a href="outputs/notes/2026-11-13-radar-reliability-power-suppression.md"
+            class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 text-xs font-semibold text-center transition flex items-center justify-center gap-1.5 shadow-2xs">
+            <span>📝 查看研究筆記 (.md)</span>
+          </a>
+          <a href="outputs/slide-scripts/2026-11-13-radar-reliability-power-suppression.md"
+            class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 text-xs font-semibold text-center transition flex items-center justify-center gap-1.5 shadow-2xs">
+            <span>🎙️ 查看逐頁腳本與講者稿</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- Presentation 2: K-Radar Dataset -->
+      <article class="presentation-card ice-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+        data-tags="4d-radar dataset k-radar 4drt rtnh enhanced-k-radar"
+        data-title="K-Radar 4D 雷達張量全天候自駕基準資料集 4DRT RTNH 稀疏卷積">
+        
+        <div class="space-y-3 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[11px] font-bold mono">10 SLIDES</span>
+            <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium mono">2026-11-13</span>
+            <span class="text-xs text-slate-400">· 自駕旗艦基準與張量稀疏化</span>
+          </div>
+
+          <h2 class="text-xl font-extrabold text-slate-900 hover:text-blue-600 transition">
+            <a href="outputs/slides/2026-11-13-k-radar-dataset.html">
+              K-Radar：4D 雷達張量全天候自駕基準資料集
+            </a>
+          </h2>
+
+          <p class="text-xs md:text-sm text-slate-600 leading-relaxed">
+            全球首個全天候 4D 雷達高維張量（4DRT）旗艦資料集（KAIST, NeurIPS 2022）：35,000 幀、9.3 萬個 3D 邊界框，涵蓋 7 種極端氣候。實證高度維度使 3D AP 躍升 +7.32%、暴雪冰霰中雷達顯著反超光達近一倍；並介紹 Enhanced K-Radar 離線 4DSRT 加速 17.1 倍與 5% 最佳密度標準。
+          </p>
+
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#K-Radar</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#4DRT</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#RTNH-SparseConv</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#Adverse-Weather</span>
+            <span class="px-2 py-0.5 rounded bg-white/80 border border-blue-200 text-slate-700 text-[11px] mono">#4DSRT-5%</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row md:flex-col gap-2 min-w-[200px] shrink-0">
+          <a href="outputs/slides/2026-11-13-k-radar-dataset.html" target="_blank"
+            class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold text-center transition flex items-center justify-center gap-2 shadow-xs cursor-pointer">
+            <span>🖥️ 開啟全螢幕簡報</span>
+          </a>
+          <a href="outputs/notes/2026-11-13-k-radar-dataset.md"
+            class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 text-xs font-semibold text-center transition flex items-center justify-center gap-1.5 shadow-2xs">
+            <span>📝 查看研究筆記 (.md)</span>
+          </a>
+          <a href="outputs/slide-scripts/2026-11-13-k-radar-dataset.md"
+            class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-blue-400 text-slate-700 hover:text-blue-600 text-xs font-semibold text-center transition flex items-center justify-center gap-1.5 shadow-2xs">
+            <span>🎙️ 查看逐頁腳本與講者稿</span>
+          </a>
+        </div>
+      </article>
+
+    </main>
+
+    <!-- Empty Search State -->
+    <div id="noResults" class="hidden text-center py-12 bg-white rounded-2xl border border-slate-200 p-8 space-y-2">
+      <div class="text-3xl">🔍</div>
+      <div class="text-sm font-bold text-slate-800">未找到符合條件的簡報</div>
+      <div class="text-xs text-slate-500">請嘗試更換搜尋關鍵字，或切換標籤分類。</div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200/80 bg-white py-6 text-center text-xs text-slate-400 mt-12">
+    <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-3">
+      <span>LLM Wiki Knowledge System · 知識只編譯一次並持續維護</span>
+      <span class="mono">GLACIAL TECH MINIMAL · OUTPUTS/SLIDES</span>
+    </div>
+  </footer>
+
+  <!-- Filter & Search JavaScript -->
+  <script>
+    let activeFilter = 'all';
+
+    function setFilter(filter) {
+      activeFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-blue-600', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-600');
+      });
+      event.target.classList.add('active', 'bg-blue-600', 'text-white');
+      event.target.classList.remove('bg-slate-100', 'text-slate-600');
+      filterCards();
+    }
+
+    function filterCards() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const cards = document.querySelectorAll('.presentation-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const title = card.getAttribute('data-title').toLowerCase();
+        const tags = card.getAttribute('data-tags').toLowerCase();
+        const text = card.innerText.toLowerCase();
+
+        const matchesQuery = query === '' || title.includes(query) || tags.includes(query) || text.includes(query);
+        const matchesFilter = activeFilter === 'all' || tags.includes(activeFilter);
+
+        if (matchesQuery && matchesFilter) {
+          card.style.display = 'flex';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const noResults = document.getElementById('noResults');
+      if (visibleCount === 0) {
+        noResults.classList.remove('hidden');
+      } else {
+        noResults.classList.add('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

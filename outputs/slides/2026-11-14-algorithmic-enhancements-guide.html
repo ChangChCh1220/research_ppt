@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>演算法深入改良與前沿架構指引 — 碩士論文專題簡報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; color: #0F172A; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .tech-bg { background-color: #FFFFFF; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; }
+    .ice-card { background: #F4F8FF; border: 1px solid #DBEAFE; border-radius: 12px; padding: 18px; }
+    .ice-card-blue { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 18px; }
+    .ice-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; }
+    .ice-badge-alert { border: 1px solid #FED7AA; background: #FFF7ED; color: #C2410C; }
+    .ice-badge-green { border: 1px solid #BBF7D0; background: #F0FDF4; color: #15803D; }
+    .slide-canvas { aspect-ratio: 16 / 9; min-height: 560px; max-height: 680px; }
+    @media print { body { background: #FFFFFF !important; } .no-print { display: none !important; } .slide-canvas { aspect-ratio: auto !important; height: 100vh !important; page-break-after: always !important; box-shadow: none !important; border: none !important; } }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 md:p-6 tech-bg">
+
+  <header class="w-full max-w-6xl flex items-center justify-between py-2 border-b border-slate-200 no-print text-xs text-slate-500">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-blue-600 tracking-wider">NYCU CIVIL ENGINEERING</span>
+      <span class="text-slate-300">|</span>
+      <span>碩士論文專題簡報 06：演算法深入改良與前沿指引</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">研究生：張喬筑</span>
+      <span class="text-slate-400">指導教授：莊子毅 博士</span>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl flex-grow flex items-center justify-center my-4">
+    <div id="slideStage" class="w-full slide-canvas bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-300"></div>
+  </main>
+
+  <div id="speakerDrawer" class="w-full max-w-6xl bg-white border border-blue-200 rounded-xl p-4 shadow-lg mb-4 hidden no-print transition-all">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider mono">SPEAKER NOTES // 講者口白備忘錄 (按 S 鍵關閉)</span>
+      </div>
+      <span class="text-[11px] text-slate-400">專題 06</span>
+    </div>
+    <div id="speakerContent" class="text-xs text-slate-700 leading-relaxed max-h-32 overflow-y-auto"></div>
+  </div>
+
+  <footer class="w-full max-w-6xl flex items-center justify-between py-2 border-t border-slate-200 no-print text-xs text-slate-600">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1">
+        <button onclick="prevSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="上一頁 (←)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+        <button onclick="nextSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="下一頁 (→)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="mono font-semibold text-slate-800">
+        PAGE <span id="currentIdx" class="text-blue-600">01</span> / <span id="totalIdx">08</span>
+      </div>
+      <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 12.5%;"></div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 text-slate-500">
+      <button onclick="toggleSpeakerNotes()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">S</span><span>備忘錄</span></button>
+      <button onclick="toggleFullScreen()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">F</span><span>全螢幕</span></button>
+      <button onclick="window.print()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span>列印 PDF</span></button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = [
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">TOPIC 06 // ALGORITHMIC ENHANCEMENTS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-4">
+            <span class="ice-badge ice-badge-green">演算法升級指南</span>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+              如何進一步做得更好：<br>
+              <span class="text-blue-600">演算法深入改良與前沿架構指引</span>
+            </h1>
+            <p class="text-sm text-slate-600 max-w-3xl leading-relaxed">
+              全面診斷 Version06 邊界瓶頸，跳脫盲目調參；融合 <code>EQL v2</code> 動態梯度均衡、<code>3D-DIoU</code> 空間回歸、<code>VoD</code> 車載運動補償、<code>Version08 平台曲線</code> 與體素先驗，構建全鏈路精度躍升體系。
+            </p>
+            <div class="grid grid-cols-4 gap-3 pt-4 border-t border-slate-100">
+              <div class="ice-card py-2.5">
+                <div class="text-[10px] text-slate-400 uppercase mono">功率無損映射</div>
+                <div class="text-xs font-bold text-blue-700 mt-0.5">Version08 平台曲線</div>
+              </div>
+              <div class="ice-card py-2.5">
+                <div class="text-[10px] text-slate-400 uppercase mono">長尾梯度防禦</div>
+                <div class="text-xs font-bold text-blue-700 mt-0.5">EQL v2 門控機制</div>
+              </div>
+              <div class="ice-card py-2.5">
+                <div class="text-[10px] text-slate-400 uppercase mono">3D 空間中心懲罰</div>
+                <div class="text-xs font-bold text-blue-700 mt-0.5">3D-DIoU / CIoU</div>
+              </div>
+              <div class="ice-card py-2.5">
+                <div class="text-[10px] text-slate-400 uppercase mono">都卜勒物理校準</div>
+                <div class="text-xs font-bold text-blue-700 mt-0.5">IMU 自車運動補償</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>融合 CVPR / AAAI / IEEE TVT / IEEE RA-L 頂級文獻架構</span>
+            <span class="mono">STATUS: UPGRADE BLUEPRINT</span>
+          </div>
+        `,
+        speaker: "各位委員好。本簡報針對碩士論文目前 Version06 所面臨的四大深層演算法限制，跳脫既有的純參數微調，全面引入近年在計算機視覺頂會（CVPR、AAAI、IEEE TVT）驗證有效的最新演算法設計。我們將依序介紹五大核心升級模組，為論文後續研究指明清晰的實作路徑。"
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">SYSTEM DIAGNOSTIC // BOTTLENECKS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-3">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">現行 Version06 系統之深層演算法瓶頸診斷</h2>
+              <p class="text-xs text-slate-500 mt-0.5">實驗數據揭示的四大物理與架構失配：雷達非無能，實為演算法束縛</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div class="ice-card border-rose-200 bg-rose-50/40">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-rose-700">1. 線性軟抑制的有效點損耗</span>
+                  <span class="ice-badge ice-badge-alert text-[10px]">P' = P[0.65 + 0.35s]</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                  對於可靠度分數 $s \\in [0.5, 0.85]$ 的真實有效車體反射，公式仍施加了 $10\\% \\sim 17\\%$ 的削弱。使得大型車遠距弱回波跌破體素激活閾值，導致體素特徵熄滅。
+                </p>
+              </div>
+              <div class="ice-card border-rose-200 bg-rose-50/40">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-rose-700">2. 21.9 : 1 極端長尾負梯度窒息</span>
+                  <span class="ice-badge ice-badge-alert text-[10px]">5,690 vs 260</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                  標準分類頭中，大量轎車樣本作為大型車神經元的負樣本反向傳播。負梯度累計值高出正梯度數十倍，導致大型車分類權重範數（Weight Norm）被嚴重壓抑。
+                </p>
+              </div>
+              <div class="ice-card border-amber-200 bg-amber-50/40">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-amber-700">3. 徑向都卜勒之自車運動混淆</span>
+                  <span class="ice-badge text-[10px] border-amber-300 text-amber-800 bg-amber-100">偽動態速度</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                  靜止路側護欄隨視線夾角 $\\theta$ 帶有 $v_{\\text{ego}} \\cos\\theta$ 徑向分量。未補償之都卜勒將靜態護欄標記為高速目標，迫使消融實驗暫時關閉都卜勒通道。
+                </p>
+              </div>
+              <div class="ice-card border-amber-200 bg-amber-50/40">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-amber-700">4. 俯視精度未能傳導至 3D AP</span>
+                  <span class="ice-badge text-[10px] border-amber-300 text-amber-800 bg-amber-100">BEV +8.76% vs 3D +0.63%</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                  純 Smooth L1 獨立回歸 $(x, y, z, w, l, h)$，缺乏空間三維幾何凸包約束。俯視定位精度的巨大增益在高度軸 $z$ 與三維中心點偏移中被稀釋殆盡。
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>根因總結：軟抑制無差別損耗、梯度壓制、運動偽雜訊與獨立座標損失</span>
+            <span class="mono">ROOT CAUSES IDENTIFIED</span>
+          </div>
+        `,
+        speaker: "深入分析實驗數據後，我們發現限制並非來自雷達硬體極限，而是四大架構失配：線性映射對可信點依然有扣分效應；長尾不平衡造成大車權重被負梯度淹沒；未補償都卜勒污染靜態特徵；回歸損失無法將二維俯視增益有效傳導至三維空間。"
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">ENHANCEMENT 01 // POWER MAPPING</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-3">
+            <div>
+              <span class="ice-badge ice-badge-green">演算法改良一</span>
+              <h2 class="text-xl font-bold text-slate-900 mt-1">Version08 平台式滿額映射曲線（Platform Curve）</h2>
+              <p class="text-xs text-slate-500">終結中高置信度有效點的功率侵蝕，實現「低分精確壓制、中高分 100% 滿額保真」</p>
+            </div>
+            <div class="ice-card-blue p-3">
+              <div class="text-center font-bold text-blue-900 text-sm">
+                $$w(s) = \\alpha + (1 - \\alpha) \\cdot \\text{clip}\\left(\\frac{s}{\\tau}, 0, 1\\right)$$
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800 flex items-center space-x-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                  <span>核心參數與機制設定</span>
+                </div>
+                <ul class="text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
+                  <li><strong class="text-slate-800">下限保底 $\\alpha = 0.30 \\sim 0.35$</strong>：保留極端離群點之幾何邊界，防止體素網格徹底虛化。</li>
+                  <li><strong class="text-slate-800">滿額門檻 $\\tau = 0.25 \\sim 0.35$</strong>：只要可靠度分數達到 $\\tau$（中等置信），權重立刻飽和至 $1.0$。</li>
+                  <li><strong class="text-slate-800">數值梯度連續性</strong>：分段線性具有階躍常數導數，徹底消除平滑 Sigmoid 在兩端的梯度消失問題。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800 flex items-center space-x-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                  <span>對比 Version06 之關鍵突破</span>
+                </div>
+                <ul class="text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
+                  <li><strong class="text-emerald-700">大型車點雲零損耗</strong>：大型車表面反射點多分布在 $s \\in [0.35, 0.70]$，在 Version08 下全數享受 100% 原始滿額功率。</li>
+                  <li><strong class="text-emerald-700">體素激活連貫性</strong>：依據 TVT 2023，大車覆蓋 20+ 體素，滿額功率確保內部微弱體素全部達到 RTNH 激活門檻。</li>
+                  <li><strong class="text-emerald-700">遠距 (60–80m) 轎車召回</strong>：避免遠距微弱點因再次衰減而遺失。</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>核心改進：引入飽和閾值 $\\tau$，徹底釋放中等置信度弱回波的能量</span>
+            <span class="mono">FORMULA: PIECEWISE-LINEAR SATURATION</span>
+          </div>
+        `,
+        speaker: "針對線性軟抑制削弱有效車體的問題，我們提出 Version08 平台式映射曲線。透過引入飽和閾值 tau，我們將可靠度空間劃分為低分壓制區與中高分無損區。一旦點的信心度超過 0.25，就賦予 100% 的原始功率，確保真實弱回波不會因為重複抑制而消失。"
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">ENHANCEMENT 02 // LONG-TAIL LEARNING</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-3">
+            <div>
+              <span class="ice-badge ice-badge-green">演算法改良二</span>
+              <h2 class="text-xl font-bold text-slate-900 mt-1">EQL v2 動態梯度均衡機制：破解 21.9 : 1 長尾壓制</h2>
+              <p class="text-xs text-slate-500">引入 CVPR 頂會經典方案，動態調控多數類別對稀有類別產生的負向梯度打擊</p>
+            </div>
+            <div class="ice-card-blue p-3">
+              <div class="text-center font-bold text-blue-900 text-sm">
+                $$L_{\\text{cls}} = -\\sum_{j \\in \\{S, T\\}} \\left[ y_j \\log(p_j) + w_j (1 - y_j) \\log(1 - p_j) \\right], \\quad w_j = 1 - E(r_j) \\cdot (1 - \\tilde{y}_j)$$
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800">梯度失衡原理分析 (Tan et al., CVPR 2020/2021)</div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  在多類別分類頭中，每個 Proposal 都會對所有非標籤類別輸出負梯度。由於轎車樣本高達 5,690 框（佔比 95.6%），大型車分類神經元承受的負梯度量是其自身正梯度的 20 倍以上，導致其權重範數持續衰退。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800">EQL v2 動態門控防禦機制</div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  在訓練過程中動態統計大車類別的累計正負梯度比 $r_T = \\frac{\\sum \\|\\nabla^+\\|}{\\sum \\|\\nabla^-\\|}$。當發現負梯度嚴重主導時，將門控權重 $w_T \\to 0$，即時忽略轎車樣本對大車造成的負梯度，徹底解決第 15 epoch 後假陽性激增崩潰。
+                </p>
+              </div>
+            </div>
+            <div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50/50 flex items-center justify-between text-xs text-blue-800">
+              <span class="font-semibold">實作路線：</span>
+              <span>在 RTNH Classification Head 替換 Focal Loss 為 EQL v2，零推理開銷，純訓練時保護</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>文獻依據：Equalization Loss v2 (CVPR 2021) 專為極端長尾目標偵測設計</span>
+            <span class="mono">METHOD: GRADIENT EQUALIZATION</span>
+          </div>
+        `,
+        speaker: "在長尾分佈下，少數類別的權重更新被龐大的多數類別負梯度所窒息。EQL v2 透過動態追蹤梯度流向，當發現大型車的正梯度累積量顯著低於負梯度時，便會暫時屏蔽多數類別對其施加的負向懲罰，讓稀少的大型車特徵能夠正常收斂。"
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">ENHANCEMENT 03 // BOX REGRESSION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-3">
+            <div>
+              <span class="ice-badge ice-badge-green">演算法改良三</span>
+              <h2 class="text-xl font-bold text-slate-900 mt-1">引入 3D-DIoU 空間回歸損失：銜接 BEV 與 3D AP 鴻溝</h2>
+              <p class="text-xs text-slate-500">將獨立座標 Smooth L1 升級為三維全局凸包中心點距離約束，嚴格鎖定高度 z 軸漂移</p>
+            </div>
+            <div class="ice-card-blue p-3">
+              <div class="text-center font-bold text-blue-900 text-sm">
+                $$\\mathcal{L}_{\\text{3D-DIoU}} = 1 - \\text{IoU}_{\\text{3D}} + \\frac{\\rho^2(\\mathbf{c}_{\\text{pred}}, \\mathbf{c}_{\\text{gt}})}{d_{\\text{box}}^2}$$
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800">Smooth L1 的致命缺陷 (Zheng et al., AAAI 2020)</div>
+                <ul class="text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
+                  <li><strong class="text-slate-800">座標獨立解耦</strong>：獨立計算 $\\Delta x, \\Delta y, \\Delta z, \\Delta l, \\Delta w, \\Delta h$，完全忽略整體幾何形狀交疊。</li>
+                  <li><strong class="text-slate-800">高度漂移敏感</strong>：4D 雷達點雲高程解析度較差，Smooth L1 在高度 $z$ 軸微小偏差下容易給出低損失，但 3D IoU 卻會直接崩跌為 0。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800">3D-DIoU 的幾何校準效益</div>
+                <ul class="text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
+                  <li><strong class="text-blue-700">三維中心點歸一化懲罰</strong>：$\\rho^2 = (\\Delta x)^2 + (\\Delta y)^2 + (\\Delta z)^2$ 直接受到最小包裹外接立方體對角線 $d_{\\text{box}}$ 歸一化約束。</li>
+                  <li><strong class="text-blue-700">無重疊梯度回傳</strong>：即使預測框與真值框完全無交集（$\\text{IoU}=0$），中心距損失仍提供強大的回拉梯度，加速收斂。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="text-center text-xs text-slate-500">
+              預期效果：確保轎車 BEV $+8.76\\%$ 增益切實轉換為 3D AP $+4.5\\% \\sim +6.0\\%$ 增益。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>文獻依據：Distance-IoU Loss (AAAI 2020) 三維延伸版</span>
+            <span class="mono">LOSS UPGRADE: 3D-DIOU REGRESSION</span>
+          </div>
+        `,
+        speaker: "為什麼 BEV 的巨大進步沒有轉化為 3D AP？因為 Smooth L1 將空間座標獨立看待。引入 3D-DIoU 之後，模型直接對三維中心點的歐式距離進行全局懲罰。特別是在雷達點雲高度彌散較大的情況下，3D-DIoU 能強力約束高度軸 Z 的預測偏差。"
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">ENHANCEMENT 04 // RADAR KINEMATICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-3">
+            <div>
+              <span class="ice-badge ice-badge-green">演算法改良四</span>
+              <h2 class="text-xl font-bold text-slate-900 mt-1">基於車載 IMU 的自車運動都卜勒補償</h2>
+              <p class="text-xs text-slate-500">重啟被暫時剔除的都卜勒通道，利用自車運動學幾何投影徹底消除靜止背景偽動態</p>
+            </div>
+            <div class="ice-card-blue p-3">
+              <div class="text-center font-bold text-blue-900 text-sm">
+                $$v_{r, \\text{comp}} = v_{r, \\text{meas}} - \\left( v_{\\text{ego}, x} \\cos\\theta \\cos\\phi + v_{\\text{ego}, y} \\sin\\theta \\cos\\phi \\right)$$
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-rose-700">為什麼先前消融實驗都卜勒會失敗？</div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  在車載前進時（例如 $v_{\\text{ego}} = 60\\text{ km/h}$），兩側路樹與鋼製護欄與自車視線夾角 $\\theta$ 隨距離動態變化，導致其測得徑向速度高達 $-10 \\sim -16\\text{ m/s}$。未校準神經網路將靜止路標與前車混淆，大幅增加假陽性。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-emerald-700">VoD 基準補償後帶來的威力 (Palffy et al., 2022)</div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  利用車載 CAN 總線之自車速度 $v_x, v_y$ 與偏航角速度 $\\omega_z$ 進行投影扣除後，所有靜態背景的都卜勒速度嚴格歸零（$0 \\pm 0.1\\text{ m/s}$）。動態車輛速度則完全顯現，提供無可替代的運動學分割特徵。
+                </p>
+              </div>
+            </div>
+            <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex justify-between items-center">
+              <span class="font-semibold">可行性驗證：</span>
+              <span>K-Radar 原始資料集完整提供高精度 RTK-GPS / IMU 姿態與車速，可直接離線計算補償。</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>文獻依據：View-of-Delft 4D Radar Benchmark (IEEE RA-L 2022)</span>
+            <span class="mono">CALIBRATION: EGO-VELOCITY PROJECTION</span>
+          </div>
+        `,
+        speaker: "在先前的消融實驗中，作者發現加入都卜勒反而導致轎車 AP 下降，因而將其移除。這正是因為缺乏自車運動補償所致。參考 VoD 論文的校準流程，只要利用車速與航向角進行投影扣除，靜止物體的速度便會歸零，從而釋放都卜勒在動態障礙物偵測上的真實威力。"
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">ENHANCEMENT 05 // VOXEL & DISTILLATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-3">
+            <div>
+              <span class="ice-badge ice-badge-green">演算法改良五</span>
+              <h2 class="text-xl font-bold text-slate-900 mt-1">體素連續性先驗與快取式特徵蒸餾</h2>
+              <p class="text-xs text-slate-500">結合 IEEE TVT 2023 體素分析，並在 16GB VRAM 顯存限制下實現無縫知識蒸餾</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800 flex items-center space-x-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                  <span>長向體素連續性增強先驗 (Li & Kong, 2023)</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  在 $0.4\\text{m}$ 體素網格下，長達 $9.5\\text{m}$ 的大型車跨越 20 個以上體素。由於雷達在金屬車斗表面鏡面散射，內部體素常為空洞。在 VFE 體素特徵編碼層引入縱向最大池化（Longitudinal Pooling），跨體素填充空間特徵，杜絕斷裂。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-slate-800 flex items-center space-x-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                  <span>離線快取式特徵蒸餾（16GB VRAM 友善）</span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  針對本機顯存無法同時並行 LiDAR-Teacher 與 Radar-Student 的硬體瓶頸：
+                  <br>1. 先行以離線方式將教師模型之中間 BEV 特徵圖存成壓縮 <code>.npz</code> 快取檔。
+                  <br>2. 學生模型訓練時僅需 7.2GB 顯存，直接讀取磁碟快取計算 MSE 蒸餾損失。
+                </p>
+              </div>
+            </div>
+            <div class="ice-card-blue p-2.5 flex items-center justify-between text-xs text-blue-900">
+              <span class="font-bold">硬體與演算法雙贏：</span>
+              <span>免購高階伺服器，在既有 RTX 3080/4080 (16GB) 即可完成前沿特徵蒸餾訓練！</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>文獻依據：Voxel-based 4D Radar Detection (IEEE TVT 2023)</span>
+            <span class="mono">HARDWARE-EFFICIENT DISTILLATION</span>
+          </div>
+        `,
+        speaker: "針對大型車空間跨度大、點雲稀疏的問題，我們結合 TVT 2023 的體素分析，在 VFE 階段引入長向幾何連續性聚合；同時，為了克服本機 16GB 顯存無法同時訓練雙骨幹的限制，我們設計了離線特徵快取蒸餾方案，兼顧頂級性能與工程可行性。"
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">SUMMARY // UPGRADE BLUEPRINT</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-3">
+            <div>
+              <span class="ice-badge ice-badge-green">演算法升級藍圖</span>
+              <h2 class="text-xl font-bold text-slate-900 mt-1">全鏈路演算法升級藍圖與預期性能指標</h2>
+              <p class="text-xs text-slate-500">五大改良模組之串聯流向與對比基準預期增益</p>
+            </div>
+            <div class="ice-card p-3 bg-slate-50 border-slate-200">
+              <div class="flex items-center justify-between text-[11px] mono text-slate-700 font-semibold overflow-x-auto">
+                <span class="px-2 py-1 bg-white rounded border border-slate-200">原始 4D 雷達</span>
+                <span>→</span>
+                <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200">[IMU 都卜勒補償]</span>
+                <span>→</span>
+                <span class="px-2 py-1 bg-white rounded border border-slate-200">PointNet 可靠度</span>
+                <span>→</span>
+                <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200">[Version08 平台曲線]</span>
+                <span>→</span>
+                <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200">[連續性 VFE]</span>
+                <span>→</span>
+                <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200">[3D-DIoU + EQL v2]</span>
+                <span>→</span>
+                <span class="px-2 py-1 bg-emerald-50 text-emerald-800 rounded border border-emerald-300 font-bold">高精度 3D 檢測</span>
+              </div>
+            </div>
+            <div class="overflow-hidden border border-slate-200 rounded-xl">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-50 text-slate-500 border-b border-slate-200 mono">
+                  <tr>
+                    <th class="p-2">模型配置</th>
+                    <th class="p-2">轎車 3D AP (%)</th>
+                    <th class="p-2">大型車 3D AP (%)</th>
+                    <th class="p-2">平均 3D AP (%)</th>
+                    <th class="p-2">關鍵機制特徵</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-white">
+                    <td class="p-2 font-medium">原始 RTNH (Baseline)</td>
+                    <td class="p-2 mono">39.81</td>
+                    <td class="p-2 mono">16.51</td>
+                    <td class="p-2 mono">28.16</td>
+                    <td class="p-2 text-slate-500">原始功率，雜訊干擾嚴重</td>
+                  </tr>
+                  <tr class="bg-slate-50/60">
+                    <td class="p-2 font-medium">Version06 (現有成果)</td>
+                    <td class="p-2 mono text-blue-600">40.44 (+0.63)</td>
+                    <td class="p-2 mono text-rose-600">14.15 (-2.36)</td>
+                    <td class="p-2 mono">27.30 (-0.86)</td>
+                    <td class="p-2 text-slate-500">線性軟抑制，大車長尾受損</td>
+                  </tr>
+                  <tr class="bg-emerald-50/40 font-bold text-emerald-900">
+                    <td class="p-2 text-emerald-800">升級全套（預期目標）</td>
+                    <td class="p-2 mono text-emerald-700">44.5 ~ 46.0 (+5.0)</td>
+                    <td class="p-2 mono text-emerald-700">21.0 ~ 24.0 (+5.5)</td>
+                    <td class="p-2 mono text-emerald-700">33.0 ~ 35.0 (+6.0)</td>
+                    <td class="p-2 text-emerald-800">平台無損 + EQL v2 + 3D-DIoU + IMU</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100 pt-2">
+            <span>結論：從根本演算法解耦，徹底釋放 4D 毫米波雷達三維感知潛力</span>
+            <span class="mono">BLUEPRINT: ROAD TO SOTA</span>
+          </div>
+        `,
+        speaker: "總結來說，透過「平台映射曲線、EQL v2 損失、3D-DIoU 回歸、都卜勒自車補償、快取式蒸餾」五大演算法組合拳，我們預期能將轎車 3D AP 推升至 45% 以上，並將大幅受損的大型車 AP 一舉扭轉為超過 21%，實現真正均衡、強健的四維雷達三維目標偵測系統。"
+      }
+    ];
+
+    let currentSlide = 0;
+    const stage = document.getElementById('slideStage');
+    const speakerContent = document.getElementById('speakerContent');
+    const speakerDrawer = document.getElementById('speakerDrawer');
+    const currentIdx = document.getElementById('currentIdx');
+    const totalIdx = document.getElementById('totalIdx');
+    const progressBar = document.getElementById('progressBar');
+
+    function updateSlide() {
+      const slide = slides[currentSlide];
+      stage.innerHTML = slide.render(
+        String(currentSlide + 1).padStart(2, '0'),
+        String(slides.length).padStart(2, '0')
+      );
+      speakerContent.innerText = slide.speaker;
+      currentIdx.innerText = String(currentSlide + 1).padStart(2, '0');
+      totalIdx.innerText = String(slides.length).padStart(2, '0');
+      progressBar.style.width = ((currentSlide + 1) / slides.length * 100) + '%';
+      
+      if (window.renderMathInElement) {
+        renderMathInElement(stage, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleSpeakerNotes() {
+      speakerDrawer.classList.toggle('hidden');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          alert(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 's') {
+        toggleSpeakerNotes();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullScreen();
+      }
+    });
+
+    window.addEventListener('load', () => {
+      updateSlide();
+    });
+  </script>
+</body>
+</html>

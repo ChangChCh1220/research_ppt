@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>光達輔助弱監督之四維雷達可靠度估計與功率抑制 — 碩士論文研究進度與全景簡報</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- KaTeX CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans TC', sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* 點陣背景紋理 */
+    .tech-bg {
+      background-color: #FFFFFF;
+      background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    /* 冰藍卡片風格 */
+    .ice-card {
+      background: #F4F8FF;
+      border: 1px solid #DBEAFE;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .ice-card-blue {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .ice-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid #BFDBFE;
+      background: #EFF6FF;
+      color: #1D4ED8;
+    }
+    .ice-badge-alert {
+      border: 1px solid #FED7AA;
+      background: #FFF7ED;
+      color: #C2410C;
+    }
+    /* 簡報 16:9 比例畫布 */
+    .slide-canvas {
+      aspect-ratio: 16 / 9;
+      min-height: 560px;
+      max-height: 680px;
+    }
+    /* 列印樣式 */
+    @media print {
+      body {
+        background: #FFFFFF !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .slide-canvas {
+        aspect-ratio: auto !important;
+        height: 100vh !important;
+        page-break-after: always !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 md:p-6 tech-bg">
+
+  <!-- 頂部資訊列 -->
+  <header class="w-full max-w-6xl flex items-center justify-between py-2 border-b border-slate-200 no-print text-xs text-slate-500">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-blue-600 tracking-wider">NYCU CIVIL ENGINEERING</span>
+      <span class="text-slate-300">|</span>
+      <span>碩士論文研究全貌與進度報告</span>
+      <span class="text-slate-300">|</span>
+      <span class="mono text-slate-400">2026 Snapshot</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">研究生：張喬筑</span>
+      <span class="text-slate-400">指導教授：莊子毅 博士</span>
+    </div>
+  </header>
+
+  <!-- 簡報主舞台 (16:9 Canvas) -->
+  <main class="w-full max-w-6xl flex-grow flex items-center justify-center my-4">
+    <div id="slideStage" class="w-full slide-canvas bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-300">
+      <!-- 投影片內容將由 JavaScript 動態載入 -->
+    </div>
+  </main>
+
+  <!-- 講者備忘錄抽屜 (按 S 切換) -->
+  <div id="speakerDrawer" class="w-full max-w-6xl bg-white border border-blue-200 rounded-xl p-4 shadow-lg mb-4 hidden no-print transition-all">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider mono">SPEAKER NOTES // 講者口白備忘錄 (按 S 鍵關閉)</span>
+      </div>
+      <span class="text-[11px] text-slate-400">同步口頭報告指引</span>
+    </div>
+    <div id="speakerContent" class="text-xs text-slate-700 leading-relaxed max-h-32 overflow-y-auto">
+      <!-- 備忘錄內容動態填充 -->
+    </div>
+  </div>
+
+  <!-- 底部控制導航列 -->
+  <footer class="w-full max-w-6xl flex items-center justify-between py-2 border-t border-slate-200 no-print text-xs text-slate-600">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1">
+        <button onclick="prevSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="上一頁 (←)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onclick="nextSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="下一頁 (→ / 空白鍵)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="mono font-semibold text-slate-800">
+        PAGE <span id="currentIdx" class="text-blue-600">01</span> / <span id="totalIdx">24</span>
+      </div>
+      <!-- 進度條 -->
+      <div class="w-36 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 4%;"></div>
+      </div>
+    </div>
+
+    <!-- 模組快速導覽下拉選單 -->
+    <div class="flex items-center space-x-2">
+      <select id="moduleSelect" onchange="jumpToSlide(parseInt(this.value))" class="text-xs bg-white border border-slate-200 rounded-md py-1 px-2 text-slate-700 focus:outline-none focus:border-blue-500">
+        <option value="1">模組一：研究背景與問題意識 (P.1-3)</option>
+        <option value="4">模組二：文獻回顧與公平界線 (P.4-5)</option>
+        <option value="6">模組三：弱監督教師方法 (P.6-8)</option>
+        <option value="9">模組四：網路與功率抑制 (P.9-11)</option>
+        <option value="12">模組五：評估體系與下游驗證 (P.12-14)</option>
+        <option value="15">模組六：實驗進度與診斷 (P.15-20)</option>
+        <option value="21">模組七：結論限制與未來 (P.21-24)</option>
+      </select>
+    </div>
+
+    <!-- 輔助快捷鍵按鈕 -->
+    <div class="flex items-center space-x-2 text-slate-500">
+      <button onclick="toggleSpeakerNotes()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1" title="切換講者備忘錄 (S)">
+        <span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">S</span>
+        <span>備忘錄</span>
+      </button>
+      <button onclick="toggleFullScreen()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1" title="全螢幕 (F)">
+        <span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">F</span>
+        <span>全螢幕</span>
+      </button>
+      <button onclick="window.print()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1" title="列印或另存 PDF (Ctrl+P)">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+        <span>PDF</span>
+      </button>
+    </div>
+  </footer>
+
+  <script>
+    // 24 頁完整簡報內容物件陣列
+    const slides = [
+      // SLIDE 01: 封面
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">MASTER THESIS COMPREHENSIVE PRESENTATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto grid grid-cols-12 gap-8 items-center">
+            <div class="col-span-7 space-y-4">
+              <span class="ice-badge">NYCU 土木工程學系碩士論文</span>
+              <h1 class="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+                光達輔助弱監督之四維雷達<br>
+                <span class="text-blue-600">可靠度估計與功率抑制</span>
+              </h1>
+              <p class="text-sm text-slate-600 leading-relaxed">
+                LiDAR-Assisted Weak Supervision for Reliability Estimation and Power Suppression of 4D Radar
+              </p>
+              <div class="pt-3 border-t border-slate-100 flex items-center space-x-6 text-xs text-slate-700">
+                <div>研究生：<strong class="text-slate-900 font-semibold">張喬筑</strong></div>
+                <div>指導教授：<strong class="text-slate-900 font-semibold">莊子毅 博士</strong></div>
+                <div>口試預計：<strong class="text-blue-700 font-semibold">2027 年 7 月</strong></div>
+              </div>
+            </div>
+            <div class="col-span-5 space-y-3">
+              <div class="ice-card p-4 space-y-2">
+                <span class="text-[11px] font-bold text-blue-700 mono uppercase tracking-wider">核心架構三部曲</span>
+                <div class="text-xs text-slate-700 space-y-1.5">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    <span><strong>弱監督教師</strong>：三維空間框 + LiDAR 幾何支持</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    <span><strong>軟式去噪</strong>：原地修改線性功率，保持 150,000 點</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    <span><strong>下游驗證</strong>：對接 RTNH 檢驗轎車與大型車 3D 偵測</span>
+                  </div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                  <div class="text-[11px] text-slate-400">三種子已完成</div>
+                  <div class="font-bold text-blue-600 mono text-base">115 組設定</div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                  <div class="text-[11px] text-slate-400">推論感測器要求</div>
+                  <div class="font-bold text-emerald-600 mono text-base">100% 雷達</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>模組一：研究背景與問題意識</span>
+            <span class="mono">K-Radar Dataset Research</span>
+          </div>
+        `,
+        notes: `各位委員好，我是陽明交通大學土木工程學系碩士生張喬筑，指導教授為莊子毅博士。今天向大家報告我的碩士論文研究進度：「光達輔助弱監督之四維雷達可靠度估計與功率抑制」。這份簡報完整涵蓋五個章節的進展，包含目前完成的 115 組三種子開發結果、突破性的 3D 幾何核對，以及後續定稿所需的最小證據鏈。`
+      },
+
+      // SLIDE 02: 4D 雷達感知困境與「軟式去噪」定位
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">01 // CONTEXT & MOTIVATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">研究動機 // 感測本質</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">4D 雷達感知瓶頸與原位功率調整</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-5">
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-blue-700 mono">PHYSICAL NATURE</div>
+                <h3 class="text-sm font-bold text-slate-800">4D 雷達物理特性</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  具備距離、方位、俯仰與都卜勒速度量測，能穿透雨霧雪天候；但回波強弱取決於物體截面積（RCS）與材質，幾何外觀不必然平整。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-rose-600 mono">TRADITIONAL TRAP</div>
+                <h3 class="text-sm font-bold text-slate-800">傳統硬性去噪局限</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  若以視覺點雲「整齊度」評判資料品質並直接硬性刪點，容易抹殺遠距離微弱回波；或以光達補全車體，喪失了全天候部署價值。
+                </p>
+              </div>
+              <div class="ice-card-blue space-y-2">
+                <div class="text-xs font-bold text-blue-700 mono">OUR IN-PLACE FORMULATION</div>
+                <h3 class="text-sm font-bold text-slate-800">本研究軟式去噪定位</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  輸入每幀維持 150,000 點雷達資料 $[x, y, z, P, v]$，<strong>不增點、不移動座標、不補全幾何</strong>，原位調整線性功率 $P \\to P'$。
+                </p>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center justify-between">
+              <span><strong>架構保證</strong>：保留原始資料列與體素占據結構，下游稀疏卷積神經網路（RTNH）拓撲不受破壞。</span>
+              <span class="mono text-blue-600 font-semibold text-xs">P' = P × w(s)</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 1.1 節 · 研究背景與動機</span>
+            <span class="mono">In-place Linear Power Suppression</span>
+          </div>
+        `,
+        notes: `第一章核心在於確立「軟式去噪」的物理定位。4D 雷達不能單純用視覺點雲的整齊度來衡量好壞。我們堅持「原位功率調整」：每幀固定的 15 萬點，座標與都卜勒全部原封不動，只在浮點功率上乘以可靠度加權。這能最大程度保留潛在車體結構，避免造成下游體素特徵網絡的空洞化。`
+      },
+
+      // SLIDE 03: 跨感測器監督盲點與類別失衡痛點
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">01 // CONTEXT & MOTIVATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">核心難點 // 物理不對稱</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">跨感測器監督盲點與大型車退步痛點</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">CHALLENGE 01 // 感測器不一致性</span>
+                <h3 class="text-sm font-bold text-slate-800">LiDAR 監督的幾何盲區 (Kung et al., 2022)</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li><strong>缺乏光達支持 ≠ 物理雜訊</strong>：雷達具備穿透能力（如車窗、降雨）與長測距特性，光達無回波處仍可能有真實雷達訊號。</li>
+                  <li><strong>近鄰光達 ≠ 絕對有效</strong>：地面或路側雜波附近同樣可能有光達點。</li>
+                  <li><strong>對策</strong>：必須嚴格區隔「可靠正例」、「可靠負例」與「不確定區域」。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">CHALLENGE 02 // 類別退步矛盾</span>
+                <h3 class="text-sm font-bold text-slate-800">先導實驗的類別失衡警訊</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li><strong>歷史 Version06 警訊</strong>：功率抑制使轎車 BEV AP 大增 <span class="text-emerald-600 font-bold">+8.76%</span>，但巴士/卡車卻退步 <span class="text-rose-600 font-bold">-4.40%</span>！</li>
+                  <li><strong>平均數的盲區</strong>：若只報告兩類平均（+2.18%），將徹底掩蓋大型車退步的致命缺陷。</li>
+                  <li><strong>對策</strong>：必須將類別、距離與光達支持狀態分層列入核心考核。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800">
+              <strong>研究核心問題</strong>：弱監督標籤能否訓練出純雷達可靠度模型？軟硬式功率映射差異為何？代理指標如何轉化為 RTNH 偵測效益？
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 1.2 節 · 研究問題與目的</span>
+            <span class="mono">Sensor Asymmetry & Class Divergence</span>
+          </div>
+        `,
+        notes: `我們在第一章提出了兩大核心挑戰：第一，光達不能盲目作為真值，無光達支持不代表是噪聲；第二，我們先導實驗發現，去噪雖然使轎車表現大幅暴增 8.76%，但大型車卻顯著退步 4.4%。如果只看兩類平均加總的 +2.18%，就會被假象矇蔽。因此，大型車的保留機制是本論文最核心的探索主題。`
+      },
+
+      // SLIDE 04: 領域基石：4DRT 張量與局部幾何學習
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">02 // LITERATURE REVIEW</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">文獻回顧 // 基礎脈絡</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">領域基石：4DRT 張量與局部幾何學習</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-2.5">
+                <div class="text-xs font-bold text-blue-700 mono">DATASET FOUNDATION</div>
+                <h3 class="text-sm font-bold text-slate-800">K-Radar / Enhanced K-Radar</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Paek et al. (2022) 提出首個具備高度（俯仰角）與都卜勒的 4D 雷達張量資料集，證實高度資訊對 3D 框偵測不可或缺。
+                </p>
+                <div class="p-2.5 rounded bg-white border border-slate-200 text-xs text-slate-700">
+                  <strong class="text-blue-700">本研究邊界標記</strong>：Enhanced K-Radar 探討密度稀疏化以節省記憶體；本研究調整的是功率而非點數，低分點仍占據體素，因此不直接宣稱同等運算量縮減。
+                </div>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <div class="text-xs font-bold text-blue-700 mono">POINT CLOUD ENCODING</div>
+                <h3 class="text-sm font-bold text-slate-800">PointNet++ 概念借鑒 (Qi et al., 2017)</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  借用 PointNet++ 局部度量空間內「鄰域特徵編碼與最大值池化摘要」的哲學，建立輕量化逐點可靠度神經網路。
+                </p>
+                <div class="p-2.5 rounded bg-white border border-slate-200 text-xs text-slate-700">
+                  <strong class="text-blue-700">本研究邊界標記</strong>：現行實作未採用多層集合抽象（Set Abstraction）與特徵傳播，屬輕量化鄰域概念借鑒，而非完整重現。
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-xs">
+              <div class="p-2 rounded bg-slate-50 border border-slate-200 text-center">
+                <div class="font-bold text-slate-800">Focal Loss</div>
+                <div class="text-slate-500 text-[11px]">降低易分背景權重 (Lin, 2017)</div>
+              </div>
+              <div class="p-2 rounded bg-slate-50 border border-slate-200 text-center">
+                <div class="font-bold text-slate-800">Class-Balanced Loss</div>
+                <div class="text-slate-500 text-[11px]">有效樣本數平滑 (Cui, 2019)</div>
+              </div>
+              <div class="p-2 rounded bg-slate-50 border border-slate-200 text-center">
+                <div class="font-bold text-slate-800">Quality Focal Loss</div>
+                <div class="text-slate-500 text-[11px]">連續軟品質目標建模 (Li, 2020)</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 2.1–2.3 節 · 稀疏表示、鄰域學習與損失函數</span>
+            <span class="mono">K-Radar & PointNet++ Principles</span>
+          </div>
+        `,
+        notes: `第二章整理了理論基礎。我們立足於 K-Radar 資料集，並借用 PointNet++ 的局部特徵聚合概念。但我們嚴格恪守學術界線：我們調整的是浮點功率而非物理刪點，因此不能照搬稀疏化的算力節省宣稱；同時我們借用的是局部聚合思想，而非完整的 PointNet++ 階層網絡。`
+      },
+
+      // SLIDE 05: 相關工作與本研究的公平比較界線
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">02 // LITERATURE REVIEW</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge">文獻回顧 // 公平比較邊界</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">相關去噪與轉移方法的公平比較界線</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">研究工作</th>
+                    <th class="p-3">核心任務與使用資料</th>
+                    <th class="p-3">與本研究的比較界線與公平重現條件</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr>
+                    <td class="p-3 font-bold text-blue-700">CORENet (2025)</td>
+                    <td class="p-3">LiDAR 監督雷達去噪；Dual-Radar</td>
+                    <td class="p-3">訓練/推論界線相同；若移植 K-Radar 屬跨資料集適配，不可直接數值相減。</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-bold text-blue-700">L4DR / FAD (2025)</td>
+                    <td class="p-3">LiDAR-雷達融合偵測；含 K-Radar</td>
+                    <td class="p-3">完整系統推論需多模態；若單獨抽取前景去噪（FAD）模組，需標記為改編對照。</td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-bold text-blue-700">RadarDistill (2024)</td>
+                    <td class="p-3">LiDAR 特徵蒸餾；nuScenes</td>
+                    <td class="p-3">需訓練專門教師與跨模態對齊，受限於 16GB VRAM，不能單加一項損失宣稱重現。</td>
+                  </tr>
+                  <tr class="bg-blue-50/50">
+                    <td class="p-3 font-bold text-slate-900">本研究 (This Work)</td>
+                    <td class="p-3">三態代理弱監督 + 功率抑制；K-Radar</td>
+                    <td class="p-3 font-semibold text-blue-700">推論 100% 依賴雷達單模態；嚴密追蹤大型車保留與 RTNH 3D 下游配對。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 flex justify-between items-center">
+              <span><strong>硬體限制承諾</strong>：本機單張 RTX 4080 (16GB VRAM)，外部對照須經真實批次測量才可納入。</span>
+              <span class="mono text-slate-400">表 2-1 比較界線</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 2.4–2.5 節 · 去噪、蒸餾與本研究關係</span>
+            <span class="mono">Controlled Fair Comparison</span>
+          </div>
+        `,
+        notes: `我們在表 2-1 中為相關工作劃分了極其嚴謹的邊界。CORENet 基於 Dual-Radar，若移植必須註明；L4DR 推論端依賴光達，我們若只抽取 FAD 必須稱為改編；RadarDistill 涉及到跨模態蒸餾的高顯存需求。我們堅持在單卡 16GB 顯存的嚴格限制下做可重現的受控比較。`
+      },
+
+      // SLIDE 06: 感測器對齊與嚴格三維空間框判定
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // METHODOLOGY</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">研究方法 // 空間幾何</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">感測器對齊與嚴格三維空間框判定</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">COORDINATE CALIBRATION</span>
+                <h3 class="text-sm font-bold text-slate-800">外參校正與多模態對齊</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  標註檔依雷達與 OS2 光達識別碼精確配對。當前場景平移向量為：
+                  <span class="mono font-semibold text-blue-700">(-2.54, 0.30, 0.70) m</span>。
+                </p>
+                <div class="p-2.5 rounded bg-white border border-slate-200 text-xs text-slate-700 space-y-1">
+                  <div>· 光達點與標註框中心各轉換一次至雷達坐標系。</div>
+                  <div>· 避免重複疊加高度偏移，統一空間基準。</div>
+                </div>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">3D ROTATED BOUNDING BOX</span>
+                <h3 class="text-sm font-bold text-slate-800">嚴格 3D 旋轉框判定準則</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  將空間點依偏航角 $\\theta_{\\text{yaw}}$ 逆向旋轉至車框局部坐標系：
+                </p>
+                <div class="p-2 bg-white rounded border border-slate-200 text-center mono text-xs text-slate-800">
+                  $$|x_{\\text{local}}| \\le \\frac{L}{2} \\ \\land \\ |y_{\\text{local}}| \\le \\frac{W}{2} \\ \\land \\ |z_{\\text{local}}| \\le \\frac{H}{2}$$
+                </div>
+                <div class="text-[11px] text-amber-700 font-semibold">
+                  ⚠️ 警告：俯視圖 (x,y) 投影絕不能代替 z 軸高度的檢查！
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 flex justify-between items-center">
+              <span>評估 ROI 區域：$x \\in [0, 72)\\text{ m}, y \\in [-16, 16)\\text{ m}, z \\in [-2, 7.6)\\text{ m}$</span>
+              <span class="mono text-slate-500">Version07 Protocol</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.1–3.2 節 · 資料協定與三維框判定</span>
+            <span class="mono">True 3D Spatial Geometry</span>
+          </div>
+        `,
+        notes: `方法的第一步是精確的三維空間對齊。雷達與光達有 2.5 米的平移。我們在判定雷達點是否在車框內時，嚴格採用旋轉至局部坐標系的三維長寬高檢驗，而非平面投影。這保證了後續幾何核對的高度正確性。`
+      },
+
+      // SLIDE 07: 空間緩衝設計與距離自適應證據門檻
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // METHODOLOGY</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">弱監督教師 // 空間設計</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">空間緩衝區設計與自適應證據門檻</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">BUFFER ZONES // 雙層空間設計</span>
+                <div class="space-y-2 text-xs text-slate-700">
+                  <div class="p-2.5 rounded bg-white border border-slate-200">
+                    <strong class="text-blue-700">核心區 (Core, E)</strong>：原始 3D 框水平擴張 $0.2\\text{ m}$、垂直擴張 $0.3\\text{ m}$，用於圈定潛在真實車體回波。
+                  </div>
+                  <div class="p-2.5 rounded bg-white border border-slate-200">
+                    <strong class="text-amber-700">保護區 (Guard, G)</strong>：全部標註框水平擴張 $0.8\\text{ m}$、垂直擴張 $0.6\\text{ m}$，<strong>嚴禁在保護區內產生負代理標籤</strong>。
+                  </div>
+                </div>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">DISTANCE-ADAPTIVE THRESHOLD</span>
+                <h3 class="text-sm font-bold text-slate-800">雷達證據點數自適應公式 (式 3-1)</h3>
+                <div class="p-2.5 bg-white rounded border border-slate-200 text-center mono text-xs text-slate-800">
+                  $$\\text{required}(r) = \\max\\{1, \\lceil b \\times \\text{clip}((30/r)^2, 0.4, 1.0) \\rceil\\}$$
+                </div>
+                <div class="text-xs text-slate-600 leading-relaxed space-y-1">
+                  <div>· 基準點數 $b$：轎車 Sedan 為 5 點，大型車 Bus/Truck 為 10 點。</div>
+                  <div>· 超過 30 公尺隨距離平方平滑衰減，最低比例 0.4（轎車 2 點、大車 4 點）。</div>
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-900">
+              <strong>物理考量</strong>：雙層緩衝避免車體邊界被誤殺；距離自適應門檻避免遠處因點雲天然稀疏而直接喪失監督依據。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.3.1 節 · 核心區、保護區與雷達證據</span>
+            <span class="mono">Spatial Buffer & Adaptive Threshold</span>
+          </div>
+        `,
+        notes: `教師設計的核心在於「保護區」與「自適應門檻」。我們在物件外圍劃定了 0.8 米的保護區，禁止將任何邊界回波標為負例；同時，考慮到點雲隨距離變遠而天然稀疏，我們將證據門檻隨距離衰減，避免遠處車輛被誤殺。`
+      },
+
+      // SLIDE 08: 三態代理標籤定義：明確區隔「不確定點」
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // METHODOLOGY</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">弱監督教師 // 標籤架構</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">三態代理標籤：可靠正例、可靠負例與不確定點</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="ice-card space-y-2 border-l-4 border-l-emerald-500">
+                <span class="text-xs font-bold text-emerald-700 mono">POSITIVE // 可靠正例</span>
+                <div class="text-sm font-bold text-slate-800">目標區 + 近鄰 LiDAR</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  位於核心區 $E$ 且最小光達距離 $d_i \\le 0.5\\text{ m}$。<br>
+                  <span class="mono text-emerald-700 font-semibold">二元參考：1 ｜ 軟目標：0.95</span>
+                </p>
+              </div>
+              <div class="ice-card space-y-2 border-l-4 border-l-rose-500">
+                <span class="text-xs font-bold text-rose-700 mono">NEGATIVE // 可靠負例</span>
+                <div class="text-sm font-bold text-slate-800">保護區外 + 遠離 LiDAR</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  位於全部保護區 $G$ 之外，且 $d_i \\ge 1.2\\text{ m}$，距離 $\\le 80\\text{ m}$。<br>
+                  <span class="mono text-rose-700 font-semibold">二元參考：0 ｜ 軟目標：0.05</span>
+                </p>
+              </div>
+              <div class="ice-card-blue space-y-2 border-l-4 border-l-amber-500">
+                <span class="text-xs font-bold text-amber-700 mono">UNCERTAIN // 框內不確定</span>
+                <div class="text-sm font-bold text-slate-800">位於目標區但無 LiDAR 支持</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  位於 $E$ 內但 $d_i > 0.5\\text{ m}$。<br>
+                  <span class="mono text-amber-700 font-semibold">基準處理：忽略 (不計損失)</span><br>
+                  探索組給予軟目標 0.55，低權重 0.1。
+                </p>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 flex items-center justify-between">
+              <div>
+                <strong>核心訓練哲學</strong>：三維框內未獲光達支持之回波，<strong>絕不直接等同負例</strong>，確保穿透性回波不被摧毀。
+              </div>
+              <span class="mono px-2 py-1 rounded bg-slate-100 text-slate-600 text-[11px]">表 3-2 代理標籤定義</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.3.2 節 · 正例、負例與不確定點</span>
+            <span class="mono">Tri-state Supervision Scheme</span>
+          </div>
+        `,
+        notes: `表 3-2 定義了三態代理標籤。這是本方法最重要的創新點之一：我們區隔了可靠正例、可靠負例與框內不確定點。車體內那些沒有光達支持的點，在基準訓練中被完全忽略、不計入損失，絕不將其誤標為負例，這為保護雷達弱回波構建了堅實屏障。`
+      },
+
+      // SLIDE 09: 中心點與局部鄰域雷達特徵工程
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // NETWORK & POWER</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">特徵工程 // 雷達原生</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">中心點 14 維 + 局部鄰域 10 維原生特徵</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-2.5">
+                <span class="text-xs font-bold text-blue-700 mono">CENTER 14D FEATURES</span>
+                <h3 class="text-sm font-bold text-slate-800">中心點特徵分支 (位置、強度、運動、結構)</h3>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 space-y-2 font-mono">
+                  <div>· 坐標強度：x, y, z, P, log1p(P)</div>
+                  <div>· 空間幾何：3D 距離 r, 方位角, 俯仰角</div>
+                  <div>· 動態統計：Doppler, |Doppler|, 功率百分位</div>
+                  <div>· 局部結構：最近鄰距離, 前三鄰均距, 局部密度</div>
+                </div>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <span class="text-xs font-bold text-blue-700 mono">NEIGHBOR 10D FEATURES (K=16, r=2m)</span>
+                <h3 class="text-sm font-bold text-slate-800">鄰點特徵分支 (局部幾何與回波一致性)</h3>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 space-y-2 font-mono">
+                  <div>· 相對幾何：dx, dy, dz, 相對距離</div>
+                  <div>· 強度一致：鄰點功率, 功率差, 鄰點百分位</div>
+                  <div>· 運動一致：鄰點 Doppler, Doppler 差</div>
+                  <div>· 有效標記：valid 標記 (補零點區隔)</div>
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex justify-between items-center">
+              <span><strong>嚴格推論界線</strong>：推論時 100% 僅使用上述雷達特徵，光達距離與標註框完全不作為模型輸入！</span>
+              <span class="mono font-semibold">表 3-3 特徵定義</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.4.1 節 · 中心點與鄰域特徵</span>
+            <span class="mono">Radar-Only Feature Engineering</span>
+          </div>
+        `,
+        notes: `推論端 100% 僅依賴雷達。我們為每個點設計了 14 維中心特徵與 10 維鄰域特徵。特別是在鄰域中查詢半徑 2 米內的 16 個鄰點，計算相對空間距離與都卜勒速度差。這使得模型具備判斷「一群點是否具有一致運動與幾何連續性」的能力。`
+      },
+
+      // SLIDE 10: 局部可靠度 MLP 網路與訓練目標
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // NETWORK & POWER</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">網路架構 // 局部編碼</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">局部可靠度網路架構與加權軟損失</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-7 ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">NETWORK PIPELINE // 圖 3-1</span>
+                <div class="space-y-2 text-xs">
+                  <div class="p-2 rounded bg-white border border-slate-200 flex justify-between items-center">
+                    <span>中心特徵 (14D)</span>
+                    <span class="mono text-blue-600 font-bold">MLP 14 → 64</span>
+                  </div>
+                  <div class="p-2 rounded bg-white border border-slate-200 flex justify-between items-center">
+                    <span>16 鄰點 (16 × 10D)</span>
+                    <span class="mono text-blue-600 font-bold">MLP 10 → 64 → 128 (MaxPool) → 128D</span>
+                  </div>
+                  <div class="p-2 rounded bg-blue-50 border border-blue-200 flex justify-between items-center">
+                    <span>特徵串接融合</span>
+                    <span class="mono text-blue-800 font-bold">192D → MLP 128 → 64 → 1 → Sigmoid</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-span-5 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-blue-700 mono">OBJECTIVE FUNCTION</span>
+                  <div class="text-xs font-bold text-slate-800">加權軟式二元交叉熵 (式 3-3)</div>
+                  <div class="p-2 bg-white rounded border border-slate-200 mono text-[11px] text-slate-800 text-center">
+                    $$L = \\frac{\\sum_i a_i [ -t_i \\log s_i - (1-t_i) \\log(1-s_i) ]}{\\sum_i a_i}$$
+                  </div>
+                  <div class="text-[11px] text-slate-600">以 logits 形式穩定計算，防止 Sigmoid 梯度消失。</div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+                  <div>· 優化器：AdamW (lr 0.0003, wd 0.0001)</div>
+                  <div>· 訓練設定：4 輪，批次 4096，三隨機種子</div>
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500 italic">
+              註：池化為特徵通道最大值池化，非功率最大點抽取；不補全點雲階層，保證高輸送量。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.4.2–3.4.3 節 · 局部編碼與訓練設定</span>
+            <span class="mono">Local Point Reliability Network</span>
+          </div>
+        `,
+        notes: `網路結構非常乾淨。中心分支升維至 64 維，鄰域分支經過 MLP 和通道最大值池化得到 128 維摘要，融合後經兩層 MLP 輸出可靠度分數。我們以 logits 形式直接計算軟 BCE 損失，配合 AdamW 優化器，在 RTX 4080 上能以極高速度收斂。`
+      },
+
+      // SLIDE 11: 三種功率映射策略：軟式、硬式與平台式
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // NETWORK & POWER</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">輸出約束 // 功率映射</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">三種功率抑制映射：軟式、硬式與 Version08 平台式</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="ice-card space-y-2">
+                <span class="text-xs font-bold text-blue-700 mono">SCHEME 01 // 基準軟式加權</span>
+                <div class="text-sm font-bold text-slate-800">連續曲線 (W065)</div>
+                <div class="p-2 bg-white rounded border border-slate-200 mono text-xs text-center">
+                  $$P' = P[\\alpha + (1-\\alpha)s^\\gamma]$$
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  基準採 $\\alpha=0.65, \\gamma=1$。最低保留 65% 線性功率，平滑無階躍，避免弱回波瞬間清空。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="text-xs font-bold text-blue-700 mono">SCHEME 02 // 硬式門檻歸零</span>
+                <div class="text-sm font-bold text-slate-800">階躍歸零 (Hard Zeroing)</div>
+                <div class="p-2 bg-white rounded border border-slate-200 mono text-xs text-center">
+                  $$P' = P \\times \\mathbb{I}(s \\ge \\tau)$$
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  低於門檻 $\\tau$ 功率設為 0；但仍保留 150,000 列與座標，非物理刪點。評估 $\\tau \\in \\{0.1 \\sim 0.9\\}$。
+                </p>
+              </div>
+              <div class="ice-card-blue space-y-2">
+                <span class="text-xs font-bold text-blue-700 mono">SCHEME 03 // Version08 平台式</span>
+                <div class="text-sm font-bold text-slate-800">滿額平台 (Platform Curve)</div>
+                <div class="p-2 bg-white rounded border border-blue-200 mono text-xs text-center">
+                  $$w(s) = \\alpha + (1-\\alpha)\\text{clip}(s/\\tau, 0, 1)$$
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  分數達到門檻 $\\tau$ 後即保留 100% 滿額功率；低分區保有底線 $\\alpha$，消除車體折損。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex justify-between items-center">
+              <span>探索空間：Version07 包含原始 1 種、軟式 21 種、硬式 6 種，共 28 種策略組合。</span>
+              <span class="mono text-blue-600 font-semibold">圖 3-2 曲線定義</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.5 節 · 功率抑制與輸出約束</span>
+            <span class="mono">Power Suppression Mapping Curves</span>
+          </div>
+        `,
+        notes: `功率抑制有三種方式：現行的軟式保留（最低保底 65%）、硬式歸零（低於門檻設為 0 但保留點位），以及我們為 Version08 規劃的「平台式曲線」。平台式曲線能保證可信車體點 100% 滿額保留，同時在低分區進行背景壓制，這是解決大車功率折損的核心武器。`
+      },
+
+      // SLIDE 12: 評估指標體系與能力邊界界定
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // EVALUATION & SELECTION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">評估體系 // 指標界線</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">評估指標體系與能力邊界界定</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">PROXY DISCRIMINATION & CALIBRATION</span>
+                <h3 class="text-sm font-bold text-slate-800">代理辨識與校準指標</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li><strong>代理點 AP / AUROC</strong>：衡量模型分數對固定可靠正負例的排序能力。<strong>高 AP 不等於找到車！</strong></li>
+                  <li><strong>Brier 分數 / ECE</strong>：衡量預測分數與二元參考的擬合一致性。<strong>不等於真實回波物理機率保證。</strong></li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">GEOMETRIC RETENTION & MACRO METRICS</span>
+                <h3 class="text-sm font-bold text-slate-800">幾何集中度與功率保留</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li><strong>Top5% 原框 / LiDAR 比例</strong>：高分點中落在目標區之比例。<strong>不代表物理去噪率。</strong></li>
+                  <li><strong>最近 LiDAR 平均距離</strong>：描述幾何偏離度。</li>
+                  <li><strong>遠距大車宏平均功率 ($Q_{\\text{far-truck}}$)</strong>：各物件幀等權平均，避免單一強回波主導。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+              <strong>學術誠信守則</strong>：明確區隔「能回答」與「不能回答」的問題（表 3-5），不把中間診斷指標誇大為最終偵測效力。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.6 節 · 評估指標及其解釋範圍</span>
+            <span class="mono">Explanatory Scope of Proxy Metrics</span>
+          </div>
+        `,
+        notes: `我們在第三章極度強調指標的解釋邊界。代理點 AP 高，只說明分數排得符合幾何弱標籤，但絕不等於車輛偵測成功；Top5% 原框比例反映的是集中度，而非真正的物理去噪率。正是因為指標邊界清晰，我們才不會把中間代理成果誤認為最終結論。`
+      },
+
+      // SLIDE 13: 約束式選模目標 J 與 29,736 種組合搜尋
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // EVALUATION & SELECTION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">選模機制 // 約束優化</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">約束式選模目標 J 與 29,736 種組合搜尋</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-6 ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">OBJECTIVE FORMULATION (式 3-8)</span>
+                <div class="text-xs font-bold text-slate-800">綜合選模目標函數 J</div>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 mono text-xs text-center text-blue-800 font-bold">
+                  $$J = 0.30 T_{\\text{GT}} + 0.20 T_{\\text{LiDAR}} + 0.20 Q_{\\text{pos}} + 0.30 Q_{\\text{far-truck}}$$
+                </div>
+                <div class="text-xs text-slate-600 leading-relaxed space-y-1">
+                  <div>· 兼顧 Top5% 原框與光達支持集中度。</div>
+                  <div>· 特別賦予 60–80m 遠距大車保留 30% 權重。</div>
+                </div>
+              </div>
+              <div class="col-span-6 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-rose-600 mono">HARD CONSTRAINTS (約束死線)</span>
+                  <div class="text-xs text-slate-700 space-y-1.5">
+                    <div class="flex items-center space-x-2">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <span>正例功率下降：$\\Delta Q_{\\text{positive}} \\le 0.01$ (不超 1%)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <span>背景代理功率增加：$\\Delta Q_{\\text{bg}} \\le 0.01$</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <span>兩項幾何比例平均變化不得為負</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-800 mono">
+                  規模：354 設定 × 3 種子 = 1,062 模型 × 28 策略 = 29,736 組合
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500">
+              選模規則：三種子平均滿足約束且 J 最高者勝出，再取最接近平均之模型作為代表，拒絕單次最高分幸運種子。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.7 節 · 實驗設計與約束式選模</span>
+            <span class="mono">Constrained Grid Search Protocol</span>
+          </div>
+        `,
+        notes: `我們設計了嚴格的選模函數 J，重點是為 60 到 80 米的遠距大車保留設定了 0.3 的權重。而且設有三道死線：正例功率降低不能超過 1%、背景功率增加不能超過 1%、幾何指標不能倒退。只有三種子平均達標且 J 最高者才能入選。`
+      },
+
+      // SLIDE 14: 下游 3D 偵測器 RTNH 驗證流程
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // EVALUATION & SELECTION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">下游驗證 // 終端閉環</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">下游 3D 偵測器 RTNH 驗證流程</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-7 ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">DETECTOR PIPELINE // 圖 3-3</span>
+                <div class="space-y-2 text-xs">
+                  <div class="p-2 bg-white rounded border border-slate-200 flex justify-between">
+                    <span>輸入四欄雷達格式</span>
+                    <span class="mono text-blue-700 font-bold">[x, y, z, P'] (五欄轉四欄)</span>
+                  </div>
+                  <div class="p-2 bg-white rounded border border-slate-200 flex justify-between">
+                    <span>體素化與點編碼</span>
+                    <span class="mono text-blue-700 font-bold">0.4m 體素 (上限4點) → 4D to 32D</span>
+                  </div>
+                  <div class="p-2 bg-white rounded border border-slate-200 flex justify-between">
+                    <span>稀疏 3D 卷積主幹</span>
+                    <span class="mono text-blue-700 font-bold">64 / 128 / 256 → BEV 特徵 768 維</span>
+                  </div>
+                  <div class="p-2 bg-blue-50 border border-blue-200 flex justify-between">
+                    <span>雙類別錨框預測頭</span>
+                    <span class="mono text-blue-800 font-bold">轎車 4.2×2.1×2.0m ｜ 大車 9.5×3.2×3.7m</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-span-5 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-blue-700 mono">BENCHMARK METRICS</span>
+                  <div class="text-xs font-bold text-slate-800">AP11 (IoU 0.5) 評估標準</div>
+                  <div class="text-xs text-slate-600 leading-relaxed space-y-1">
+                    <div>· 41 召回率採樣點取 11 點平均。</div>
+                    <div>· 嚴格區分 BEV AP11 與 3D AP11。</div>
+                    <div>· 分別報告轎車、大車及兩類平均。</div>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                  ⚠️ 關鍵特徵：可靠度模型與 RTNH 為兩階段先後學習，無端到端梯度更新，代理提升不保證偵測框必然更準！
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500">
+              公平重訓要求：原始功率、軟式加權、硬式歸零與強度對照，必須在相同種子與預算下重新訓練 RTNH。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.8 節 · RTNH 下游偵測驗證</span>
+            <span class="mono">Decoupled Two-Stage Verification</span>
+          </div>
+        `,
+        notes: `最終裁判是下游偵測器 RTNH。它接收四欄資料，經過體素化、稀疏 3D 卷積與錨框預測，報告 BEV 和 3D 的 AP11。請注意，這兩階段是完全解耦的，可靠度模型的分數不直接等同於 RTNH 的分類置信度，因此必須進行嚴格的公平配對訓練。`
+      },
+
+      // SLIDE 15: 115 組設定三種子評估：固定 W065 軟式策略比較
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // RESULTS & DIAGNOSTICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge">階段成果 // 115 組設定</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">開發集評估：固定 W065 下的模型表現</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5">候選設定 (固定 W065 軟式)</th>
+                    <th class="p-2.5">代理 AP ± SD (%)</th>
+                    <th class="p-2.5">Top5% 原框 (%)</th>
+                    <th class="p-2.5">正例功率 (%)</th>
+                    <th class="p-2.5">遠距大車 (%)</th>
+                    <th class="p-2.5">綜合目標 J</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-blue-50/60 font-semibold">
+                    <td class="p-2.5 text-blue-700">移除顯式 Doppler (Drop Doppler)</td>
+                    <td class="p-2.5 mono text-blue-700">68.46 ± 0.74</td>
+                    <td class="p-2.5 mono">43.35</td>
+                    <td class="p-2.5 mono">96.68</td>
+                    <td class="p-2.5 mono">87.13</td>
+                    <td class="p-2.5 mono font-bold text-blue-800">0.6540</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">降低負正比至 4</td>
+                    <td class="p-2.5 mono">64.56 ± 0.87</td>
+                    <td class="p-2.5 mono">42.05</td>
+                    <td class="p-2.5 mono">96.66</td>
+                    <td class="p-2.5 mono">86.74</td>
+                    <td class="p-2.5 mono">0.6462</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">增大鄰點數 K=32</td>
+                    <td class="p-2.5 mono">65.04 ± 0.67</td>
+                    <td class="p-2.5 mono font-bold text-emerald-600">44.86</td>
+                    <td class="p-2.5 mono">95.59</td>
+                    <td class="p-2.5 mono">84.36</td>
+                    <td class="p-2.5 mono">0.6451</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">鄰域通道放大 128/256</td>
+                    <td class="p-2.5 mono">65.01 ± 1.03</td>
+                    <td class="p-2.5 mono">42.24</td>
+                    <td class="p-2.5 mono">96.39</td>
+                    <td class="p-2.5 mono">86.01</td>
+                    <td class="p-2.5 mono">0.6445</td>
+                  </tr>
+                  <tr class="bg-slate-50 text-slate-500">
+                    <td class="p-2.5">基準模型 (Baseline)</td>
+                    <td class="p-2.5 mono">64.63 ± 0.88</td>
+                    <td class="p-2.5 mono">41.41</td>
+                    <td class="p-2.5 mono">96.06</td>
+                    <td class="p-2.5 mono">84.58</td>
+                    <td class="p-2.5 mono">0.6376</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-900 leading-relaxed">
+              <strong>深度洞察 // 移除都卜勒之謎</strong>：移除顯式都卜勒特徵取得最高代理 AP (68.46%)，原因在於自車運動未補償時徑向都卜勒干擾了神經網路對靜態物體的判斷，而非都卜勒本身毫無物理價值。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.1–4.2 節 · 表 4-1 與圖 4-1 階段性成果</span>
+            <span class="mono">Doppler-Drop & K=32 Findings</span>
+          </div>
+        `,
+        notes: `在 115 組三種子評估中，表 4-1 顯示「移除顯式都卜勒通道」取得了最高的 68.46% 代理 AP 與最高 J 值。我們深入探討原因：因為原始資料缺少精確的自車運動補償，徑向都卜勒速度在有限訓練預算下對靜態結構造成了混淆。同時，增大鄰點至 32 點能顯著提升目標集中度至 44.86%。`
+      },
+
+      // SLIDE 16: 模型與功率策略聯合評估：焦點損失與硬式門檻
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // RESULTS & DIAGNOSTICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge">聯合比較 // 功率策略</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">模型與功率策略聯合比較：硬式歸零之暫時領先</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5">模型／損失函數</th>
+                    <th class="p-2.5">硬式門檻 τ</th>
+                    <th class="p-2.5">正例功率 (%)</th>
+                    <th class="p-2.5">背景功率 (%)</th>
+                    <th class="p-2.5">遠距大車 (%)</th>
+                    <th class="p-2.5">綜合目標 J</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-blue-50/60 font-semibold">
+                    <td class="p-2.5 text-blue-700">焦點係數 0.75 (Focal)</td>
+                    <td class="p-2.5 mono">0.1</td>
+                    <td class="p-2.5 mono">99.99</td>
+                    <td class="p-2.5 mono text-rose-600">73.62</td>
+                    <td class="p-2.5 mono font-bold text-emerald-600">99.31</td>
+                    <td class="p-2.5 mono font-bold text-blue-800">0.6900</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">品質焦點損失 (QFL)</td>
+                    <td class="p-2.5 mono">0.1</td>
+                    <td class="p-2.5 mono">99.98</td>
+                    <td class="p-2.5 mono">68.99</td>
+                    <td class="p-2.5 mono">98.92</td>
+                    <td class="p-2.5 mono">0.6887</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">焦點係數 0.5 (Focal)</td>
+                    <td class="p-2.5 mono">0.1</td>
+                    <td class="p-2.5 mono">99.98</td>
+                    <td class="p-2.5 mono">66.21</td>
+                    <td class="p-2.5 mono">98.52</td>
+                    <td class="p-2.5 mono">0.6875</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">標準焦點損失 (Focal)</td>
+                    <td class="p-2.5 mono">0.1</td>
+                    <td class="p-2.5 mono">99.94</td>
+                    <td class="p-2.5 mono text-emerald-600">59.89</td>
+                    <td class="p-2.5 mono">96.85</td>
+                    <td class="p-2.5 mono">0.6825</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5">QFL (beta=3)</td>
+                    <td class="p-2.5 mono">0.2</td>
+                    <td class="p-2.5 mono">99.94</td>
+                    <td class="p-2.5 mono text-emerald-600 font-bold">57.42</td>
+                    <td class="p-2.5 mono">96.97</td>
+                    <td class="p-2.5 mono">0.6816</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+              <strong>客觀取捨反思</strong>：焦點損失 + 硬式 0.1 雖達最高 J (0.6900)，但其背景功率殘留高達 73.62%！低門檻硬式策略藉由極度保守地保留點雲推高了保留指標，但去噪純淨度受到妥協，必須經下游 RTNH 實測檢驗。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.3 節 · 表 4-2 聯合策略比較</span>
+            <span class="mono">Hard Thresholding vs. Background Trade-off</span>
+          </div>
+        `,
+        notes: `當我們加入 28 種功率策略聯合比較時，焦點損失搭配硬式門檻 0.1 暫居第一，J 達到 0.6900。但我們誠實指出了問題：硬式 0.1 的背景功率殘留達 73.62%，這說明它是透過保留大量點雲來拿到高分，而非真正乾淨的去噪。這更凸顯了下游偵測驗證的不可替代性。`
+      },
+
+      // SLIDE 17: 突破性幾何核對：破除俯視負代理假象的 3D 側視驗證
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // RESULTS & DIAGNOSTICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">突破性診斷 // 幾何核對</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">三維標籤核對：破除俯視投影的負代理假象</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-6 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-blue-700 mono">CASE AUDIT // 場景 3 幀 00031 物件 0</span>
+                  <div class="text-xs text-slate-700 leading-relaxed">
+                    先前在俯視圖（BEV）上，車框二維投影內密密麻麻充斥著看似高達 <strong>1,759 個負代理點</strong>，引起標註規則嚴重崩潰的疑慮。
+                  </div>
+                </div>
+                <div class="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-700 space-y-1.5">
+                  <div class="font-bold text-slate-900">真實空間尺寸剖析：</div>
+                  <div>· 原始車框高度：$[-0.5, 3.5]\\text{ m}$ (高 $4.0\\text{ m}$)</div>
+                  <div>· 保護車框高度：$[-1.1, 4.1]\\text{ m}$ (高 $5.2\\text{ m}$)</div>
+                </div>
+              </div>
+              <div class="col-span-6">
+                <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                      <tr>
+                        <th class="p-2.5">幾何判定範圍</th>
+                        <th class="p-2.5 text-emerald-600">正代理</th>
+                        <th class="p-2.5 text-rose-600">負代理</th>
+                        <th class="p-2.5 text-slate-500">未判定</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                      <tr>
+                        <td class="p-2.5">僅原框 x-y 投影內</td>
+                        <td class="p-2.5 mono">349</td>
+                        <td class="p-2.5 mono text-rose-600 font-bold">1,759</td>
+                        <td class="p-2.5 mono">2,591</td>
+                      </tr>
+                      <tr class="bg-emerald-50/50 font-semibold">
+                        <td class="p-2.5 text-slate-900">真實三維原框內</td>
+                        <td class="p-2.5 mono text-emerald-700 font-bold">311</td>
+                        <td class="p-2.5 mono text-emerald-700 font-bold">0</td>
+                        <td class="p-2.5 mono">1,960</td>
+                      </tr>
+                      <tr class="bg-blue-50/50">
+                        <td class="p-2.5 text-slate-900">真實三維保護框內</td>
+                        <td class="p-2.5 mono text-blue-700 font-bold">349</td>
+                        <td class="p-2.5 mono text-blue-700 font-bold">0</td>
+                        <td class="p-2.5 mono">3,276</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 leading-relaxed">
+              <strong>關鍵實證結論</strong>：1,759 個負代理<strong>100% 全部落在保護高度之外（車頂上方或路面下）</strong>！真實三維框內負代理完全為 0，證明弱監督三維保護規則完全正確，排除了教師標籤錯標的假象。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.4 節 · 表 4-3 與圖 4-2 幾何核對</span>
+            <span class="mono">True 3D vs. BEV Projection Artifact</span>
+          </div>
+        `,
+        notes: `這是本論文最精彩的診斷之一！我們先前在俯視圖上看到車框投影裡有 1,759 個負代理，非常震驚。但當我們做 3D 側視核對時發現，真實 3D 框內的負代理是「完全的 0」！這 1,759 個點全都在車頂上方。這項核對證實了我們的弱監督幾何規則完全健全，也給自駕點雲研究上了寶貴的一課：絕對不要單看 BEV 投影。`
+      },
+
+      // SLIDE 18: 21.9:1 樣本嚴重失衡與遠距大型車功率衰退
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // RESULTS & DIAGNOSTICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">核心痛點 // 數據與物理衰退</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">21.9:1 樣本嚴重失衡與遠距大型車功率衰退</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">EXTREME CLASS IMBALANCE (圖 4-3)</span>
+                <h3 class="text-sm font-bold text-slate-800">訓練資料類別極端長尾失衡</h3>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 space-y-2">
+                  <div class="flex justify-between">
+                    <span>轎車物件幀 (Sedan)：</span>
+                    <strong class="mono text-blue-700">5,690 幀</strong>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>大型車物件幀 (Bus/Truck)：</span>
+                    <strong class="mono text-rose-600">260 幀</strong>
+                  </div>
+                  <div class="pt-1 border-t border-slate-100 text-slate-500 font-semibold flex justify-between">
+                    <span>數量失衡比：</span>
+                    <span class="mono text-rose-700 text-sm">21.9 : 1</span>
+                  </div>
+                </div>
+                <div class="text-[11px] text-slate-500">大車僅出現在場景 1, 2；開發場景 3 卻有 1,254 個大車幀，存在顯著分布偏移。</div>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">DISTANCE-DEGRADATION (表 4-4)</span>
+                <h3 class="text-sm font-bold text-slate-800">大型車功率保留率階梯衰退 (W065)</h3>
+                <div class="overflow-hidden rounded border border-slate-200 bg-white">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-500 font-semibold">
+                      <tr>
+                        <th class="p-2">水平距離</th>
+                        <th class="p-2 text-emerald-600">有 LiDAR 支持</th>
+                        <th class="p-2 text-rose-600">無 LiDAR 支持</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                      <tr><td class="p-1.5 mono">0–20 m</td><td class="p-1.5 mono">97.14%</td><td class="p-1.5 mono">95.56%</td></tr>
+                      <tr><td class="p-1.5 mono">20–40 m</td><td class="p-1.5 mono">95.26%</td><td class="p-1.5 mono">91.33%</td></tr>
+                      <tr><td class="p-1.5 mono">40–60 m</td><td class="p-1.5 mono">92.16%</td><td class="p-1.5 mono">87.27%</td></tr>
+                      <tr class="bg-rose-50/50 font-bold"><td class="p-1.5 mono text-rose-700">60–80 m</td><td class="p-1.5 mono text-blue-700">90.47%</td><td class="p-1.5 mono text-rose-700">82.68%</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="p-2.5 rounded bg-slate-50 border border-slate-200 text-xs text-slate-600">
+              <strong>診斷線索</strong>：缺乏教師支持的遠距大車回波，功率保留率從 95.5% 崩跌至 82.6%，模型在遠處誤將微弱車體當作噪聲壓低。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5.1–4.5.2 節 · 圖 4-3 與表 4-4</span>
+            <span class="mono">Imbalance & Power Attenuation</span>
+          </div>
+        `,
+        notes: `但真正的問題出在資料分布與遠距衰退上。訓練集中轎車與大車的比例高達 21.9 比 1，大車樣本極其稀缺。表 4-4 揭示了殘酷的現象：在 60 到 80 米處，沒有光達支持的大車點，功率保留率跌到了 82.68%。這證明了模型在遠距離將大車的有效弱回波過度抑制了。`
+      },
+
+      // SLIDE 19: 歷史 RTNH 先導結果剖析：轎車大幅提升 vs. 大型車退步
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // RESULTS & DIAGNOSTICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">歷史先導 // 慎重解讀</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">歷史 RTNH 先導結果解讀：轎車受益與大車退步</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5">評估維度</th>
+                    <th class="p-2.5">目標類別</th>
+                    <th class="p-2.5">原始功率 AP11 (%)</th>
+                    <th class="p-2.5">軟式 w0.55 AP11 (%)</th>
+                    <th class="p-2.5">真實差值 (百分點)</th>
+                    <th class="p-2.5">深層解讀</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-emerald-50/50">
+                    <td class="p-2.5 font-bold">BEV (俯視)</td>
+                    <td class="p-2.5 font-semibold text-blue-700">轎車 (Sedan)</td>
+                    <td class="p-2.5 mono">4.85</td>
+                    <td class="p-2.5 mono font-bold text-emerald-600">13.62</td>
+                    <td class="p-2.5 mono font-bold text-emerald-600">+8.76</td>
+                    <td class="p-2.5 text-slate-600">噪聲壓低，轎車邊界回波顯著清晰化</td>
+                  </tr>
+                  <tr class="bg-rose-50/50">
+                    <td class="p-2.5 font-bold">BEV (俯視)</td>
+                    <td class="p-2.5 font-semibold text-rose-700">巴士/卡車 (Truck)</td>
+                    <td class="p-2.5 mono">17.62</td>
+                    <td class="p-2.5 mono text-rose-600">13.23</td>
+                    <td class="p-2.5 mono font-bold text-rose-600">-4.40</td>
+                    <td class="p-2.5 text-rose-800 font-medium">長車身回波遭削弱，體素特徵不足</td>
+                  </tr>
+                  <tr class="bg-slate-50 font-semibold">
+                    <td class="p-2.5">BEV (俯視)</td>
+                    <td class="p-2.5 text-slate-800">兩類等權平均</td>
+                    <td class="p-2.5 mono">11.24</td>
+                    <td class="p-2.5 mono">13.42</td>
+                    <td class="p-2.5 mono text-blue-600">+2.18</td>
+                    <td class="p-2.5 text-slate-500">平均值掩蓋了大型車的退步！</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5 font-bold">3D (三維)</td>
+                    <td class="p-2.5">兩類等權平均</td>
+                    <td class="p-2.5 mono">5.95</td>
+                    <td class="p-2.5 mono text-slate-600">5.73</td>
+                    <td class="p-2.5 mono text-rose-600">-0.22</td>
+                    <td class="p-2.5 text-slate-600">俯視改善未同步轉換為 3D 高度定位</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-900 leading-relaxed">
+              <strong>嚴格學術戒律</strong>：這組紀錄<strong>絕不能表述為「三維偵測全面提升 2%」</strong>！它揭示了俯視改善與 3D 改善的脫節，是引導後續演算法改良不可或缺的真實病理報告。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.6 節 · 表 4-5 與圖 4-4 歷史先導診斷</span>
+            <span class="mono">Historic RTNH Pilot Analysis</span>
+          </div>
+        `,
+        notes: `表 4-5 的歷史 Version06 結果是我們誠實研究態度的體現。軟式去噪雖然讓轎車的俯視 AP 大幅增加了 8.76 個百分點，但大型車卻倒退了 4.4 個百分點，而且 3D 兩類平均甚至微跌 0.22%。我們在論文中嚴禁宣稱「整體偵測率提升 2%」，而是將其作為核心痛點進行靶向攻堅。`
+      },
+
+      // SLIDE 20: 大型車退步的 4 大競爭解釋
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // RESULTS & DIAGNOSTICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">機理剖析 // 競爭假說</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">大型車性能退步的四大競爭假說</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="ice-card space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold text-blue-700 mono">HYPOTHESIS 01</span>
+                  <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-[10px] mono">Data</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800">資料與幾何稀缺假說</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  訓練集僅 260 個大車幀（21.9:1），模型極少接觸長車身、高車體與遠距離大車的散射結構。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold text-blue-700 mono">HYPOTHESIS 02</span>
+                  <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-[10px] mono">Teacher</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800">光達視野遮蔽偏向假說</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  光達僅照亮車尾或單一側面，車身其餘大量雷達點落入「不確定區」缺乏主動監督，導致被模型保守低估。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold text-rose-600 mono">HYPOTHESIS 03</span>
+                  <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-700 text-[10px] mono">Mapping</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800">功率映射削弱弱回波假說</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  連續軟式抑制直接將功率乘以小於 1 的倍率，即使保留 65% 也可能破壞了偵測器仰賴的關鍵微弱訊號。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold text-slate-700 mono">HYPOTHESIS 04</span>
+                  <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] mono">Detector</span>
+                </div>
+                <h3 class="text-sm font-bold text-slate-800">RTNH 偵測器結構不適配假說</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  大車錨框高達 9.5m，在 0.4m 體素下若每格最多採 4 點，點數稀疏度可能對分類信心或回歸造成系統性衝擊。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700">
+              <strong>行動承諾</strong>：在完成逐物件漏檢配對（中心、尺度、方向、IoU 分組）之前，<strong>不將退步簡單歸因於單一原因</strong>。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5.3 節 · 大型車退步的競爭解釋</span>
+            <span class="mono">Competing Hypotheses & Diagnostic Path</span>
+          </div>
+        `,
+        notes: `大車為什麼退步？我們提出了四個競爭假說：樣本太少、光達遮蔽、功率映射壓低了弱訊號、還是 RTNH 偵測器自身的問題？在沒有完成精確的逐物件漏檢配對前，我們絕不武斷地下結論，而是保持開放嚴謹的科研態度。`
+      },
+
+      // SLIDE 21: 目前可成立之核心結論
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // CONCLUSIONS & ROADMAP</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">現狀總結 // 階段定論</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">目前可成立之核心結論</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-5">
+              <div class="ice-card space-y-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center mono text-sm">01</div>
+                <h3 class="text-sm font-bold text-slate-800">弱監督框架有效性確立</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  僅依賴雷達原生 14 維中心 + 10 維鄰域特徵，模型能在固定代理監督下形成非隨機排序，代理 AP 達到 68.46%。
+                </p>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center mono text-sm">02</div>
+                <h3 class="text-sm font-bold text-slate-800">3D 保護幾何規則驗證無誤</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  三維側視核對證實，俯視投影內的 1,759 個負代理全數在車框外，真實 3D 框內負代理為 0，排除了教師規則錯誤。
+                </p>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center mono text-sm">03</div>
+                <h3 class="text-sm font-bold text-slate-800">精準鎖定失敗診斷靶心</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  確認了自車運動都卜勒干擾、21.9:1 樣本嚴重失衡，以及 60–80m 遠距缺乏光達支持點功率衰退至 82.68% 之核心瓶頸。
+                </p>
+              </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-900 flex justify-between items-center">
+              <span><strong>定稿原則</strong>：最終偵測增益須待獨立場景三種子 RTNH 跑完後撰寫，不預先宣稱「全面提升」。</span>
+              <span class="mono font-semibold">第 5.1 節結論</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 5.1 節 · 目前可成立的結論</span>
+            <span class="mono">Solid Snapshot Conclusions</span>
+          </div>
+        `,
+        notes: `第五章結論部分，我們總結了目前完全站得住腳的三大結論：第一，弱監督純雷達可靠度學習成立；第二，3D 幾何規則健全無誤；第三，精準定位了都卜勒、樣本失衡與大車遠距衰退的真因。我們絕不提前吹噓尚未完成的最終指標。`
+      },
+
+      // SLIDE 22: 本研究面臨的 7 大限制
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // CONCLUSIONS & ROADMAP</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">自我審視 // 學術嚴謹</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">本研究目前面臨的 7 大限制 (Limitations)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-xs text-slate-700">
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <strong>1. 監督幾何假設擬合</strong>：模型可能過擬合代理規則而非感知任務本身。
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <strong>2. 單一開發場景偏誤</strong>：場景 3 主導選模，存在局部過擬合風險。
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <strong>3. 影格時間相關性</strong>：同車跨影格重複計數，獨立車輛樣本數低於標註數。
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <strong>4. ROI 範圍與可見度限制</strong>：遠距分析受限於當前 72m 評估邊界。
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <strong>5. 功率歸零未刪點</strong>：保持 150,000 列，不帶來推論加速或儲存減少。
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <strong>6. 外部對照尚未全鏈跑完</strong>：受 16GB 顯存限制，CORENet 等重現未完。
+              </div>
+              <div class="col-span-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                <strong>7. 歷史偵測紀錄雜湊不全</strong>：舊版歷史紀錄缺乏部分完整環境識別，不可直接混入正式主表。
+              </div>
+            </div>
+            <div class="p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-500 italic">
+              誠實列出研究邊界，是確保後續定稿結論具備高度公信力與可信度的基石。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 5.2 節 · 研究限制</span>
+            <span class="mono">Seven Critical Study Limitations</span>
+          </div>
+        `,
+        notes: `我們在論文中毫不避諱地列出了七大限制。包括：單一開發場景的過擬合風險、影格重複關聯、功率歸零不節省算力、以及外部對照方法的顯存瓶頸。清晰界定這些限制，是確保研究站得住腳的關鍵。`
+      },
+
+      // SLIDE 23: 演算法改良藍圖：平台式映射、類別加權與蒸餾
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // CONCLUSIONS & ROADMAP</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">演算法展望 // VERSION08</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">後續演算法改良藍圖 (Version08 規劃)</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-5">
+              <div class="ice-card-blue space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">STEP 01 // 平台式功率映射</span>
+                <h3 class="text-sm font-bold text-slate-800">可信區無損保留平台</h3>
+                <div class="p-2 bg-white rounded border border-blue-200 mono text-xs text-center">
+                  $$w(s) = \\alpha + (1-\\alpha)\\text{clip}(s/\\tau, 0, 1)$$
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  達到門檻 $\\tau$ 後保留 100% 滿額功率，徹底消除軟式抑制對大車車體訊號的折損。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">STEP 02 // 損失函數動態重加權</span>
+                <h3 class="text-sm font-bold text-slate-800">有界類別與距離加權</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  針對 21.9:1 樣本失衡，引入有上限的大型車正例加權與遠距衰退動態補償，維持共用骨幹避免增加部署成本。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">STEP 03 // 輕量化特徵轉移</span>
+                <h3 class="text-sm font-bold text-slate-800">輔助前景頭與快取蒸餾</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  評估共用骨幹下的輔助預測；若採用特徵蒸餾，先離線快取光達教師分數，突破 16GB 顯存限制。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex justify-between items-center">
+              <span>優先順序：<strong>先映射修復 $\\to$ 再加權平衡 $\\to$ 最後才增網路容量</strong>。</span>
+              <span class="mono text-blue-600 font-semibold">第 5.3 節改良規劃</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 5.3 節 · 演算法改良與後續建議</span>
+            <span class="mono">Version08 Algorithm Blueprint</span>
+          </div>
+        `,
+        notes: `為了解決上述痛點，我們規劃了 Version08 的三步演算法改良：第一，引入平台式映射，確保可信車體回波 100% 滿額無損保留；第二，在損失函數中引入有界的大車與遠距加權；第三，在不增加推論負擔下，探索快取式特徵蒸餾。`
+      },
+
+      // SLIDE 24: 定稿最小證據鏈與六大優先順序
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // CONCLUSIONS & ROADMAP</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge">定稿藍圖 // 證據閉環</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">定稿所需的最小證據鏈與優先順序 (表 4-6)</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr>
+                    <th class="p-2.5 w-16 text-center">順序</th>
+                    <th class="p-2.5 w-64">實驗項目與嚴格控制變因</th>
+                    <th class="p-2.5">要回答的科學核心問題</th>
+                    <th class="p-2.5 w-24 text-center">狀態</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-blue-50/40">
+                    <td class="p-2.5 text-center font-bold mono text-blue-700">01</td>
+                    <td class="p-2.5 font-semibold">完成 08–12 階段，鎖定模型／策略／資料</td>
+                    <td class="p-2.5">最終選到什麼最優設定？是否具備種子可重現性？</td>
+                    <td class="p-2.5 text-center text-blue-600 font-semibold">進行中</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5 text-center font-bold mono">02</td>
+                    <td class="p-2.5 font-semibold">完整 RTNH 介面：原始、硬式、軟式、強度對照</td>
+                    <td class="p-2.5">可靠度學習與功率修改，究竟能否改善真實找車能力？</td>
+                    <td class="p-2.5 text-center text-amber-600 font-semibold">即刻啟動</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5 text-center font-bold mono">03</td>
+                    <td class="p-2.5 font-semibold">逐物件配對檢驗漏檢／誤檢／框偏差（分車型與距離）</td>
+                    <td class="p-2.5">大型車性能退步具體發生在哪個距離與幾何環節？</td>
+                    <td class="p-2.5 text-center text-slate-400">待完成 02</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5 text-center font-bold mono">04</td>
+                    <td class="p-2.5 font-semibold">Version08 平台式改良：原版 vs 僅映射 vs 僅加權</td>
+                    <td class="p-2.5">改善來源究竟是功率映射修正，還是監督權重平衡？</td>
+                    <td class="p-2.5 text-center text-slate-400">消融階段</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5 text-center font-bold mono">05</td>
+                    <td class="p-2.5 font-semibold">一項可負擔外部方法（如 FAD 改編對照）</td>
+                    <td class="p-2.5">在相同資料與預算下，是否切實超越合理替代方法？</td>
+                    <td class="p-2.5 text-center text-slate-400">對照階段</td>
+                  </tr>
+                  <tr class="bg-emerald-50/40">
+                    <td class="p-2.5 text-center font-bold mono text-emerald-700">06</td>
+                    <td class="p-2.5 font-semibold text-emerald-800">最終少數方案三種子未見場景盲測與成本測量</td>
+                    <td class="p-2.5 text-emerald-900">增益是否穩定、具備泛化性且在受限硬體上可負擔？</td>
+                    <td class="p-2.5 text-center text-emerald-600 font-bold">定稿驗收</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-900 flex justify-between items-center">
+              <span><strong>答辯致謝</strong>：以完整的證據鏈完成學位論文。感謝指導教授與各位委員的聆聽，請不吝指教！</span>
+              <span class="mono font-semibold">NYCU Master Thesis 2027</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.7 節 · 表 4-6 最小證據鏈</span>
+            <span class="mono">Roadmap to Thesis Defense</span>
+          </div>
+        `,
+        notes: `最後，我們制定了論文定稿的「最小證據鏈」六大工作順序：從完成 08-12 鎖定選模、跑通 RTNH 四組配對重訓、做逐物件漏檢分析、驗證 Version08 消融，到外部改編對照與獨立盲測場景驗證。我們將以最扎實、最客觀的數據完成學位論文。感謝各位老師！`
+      }
+    ];
+
+    let currentSlide = 1;
+    const totalSlides = slides.length;
+
+    function renderSlide(index) {
+      if (index < 1 || index > totalSlides) return;
+      currentSlide = index;
+      
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide - 1].render(currentSlide, totalSlides);
+      
+      document.getElementById('currentIdx').textContent = String(currentSlide).padStart(2, '0');
+      document.getElementById('totalIdx').textContent = String(totalSlides).padStart(2, '0');
+      document.getElementById('progressBar').style.width = ((currentSlide / totalSlides) * 100) + '%';
+      
+      // 更新備忘錄
+      document.getElementById('speakerContent').textContent = slides[currentSlide - 1].notes;
+
+      // 更新模組下拉選單
+      updateModuleSelect(currentSlide);
+
+      // KaTeX 自動渲染
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(stage, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    function updateModuleSelect(index) {
+      const select = document.getElementById('moduleSelect');
+      if (index >= 1 && index <= 3) select.value = "1";
+      else if (index >= 4 && index <= 5) select.value = "4";
+      else if (index >= 6 && index <= 8) select.value = "6";
+      else if (index >= 9 && index <= 11) select.value = "9";
+      else if (index >= 12 && index <= 14) select.value = "12";
+      else if (index >= 15 && index <= 20) select.value = "15";
+      else if (index >= 21) select.value = "21";
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        renderSlide(currentSlide + 1);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        renderSlide(currentSlide - 1);
+      }
+    }
+
+    function jumpToSlide(page) {
+      renderSlide(page);
+    }
+
+    function toggleSpeakerNotes() {
+      const drawer = document.getElementById('speakerDrawer');
+      drawer.classList.toggle('hidden');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // 鍵盤導航
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        toggleSpeakerNotes();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullScreen();
+      }
+    });
+
+    // 初始化渲染第一頁
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSlide(1);
+    });
+  </script>
+</body>
+</html>

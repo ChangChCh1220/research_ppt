@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>功率抑制映射機制與約束式選模 — 碩士論文專題簡報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; color: #0F172A; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .tech-bg { background-color: #FFFFFF; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; }
+    .ice-card { background: #F4F8FF; border: 1px solid #DBEAFE; border-radius: 12px; padding: 18px; }
+    .ice-card-blue { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 18px; }
+    .ice-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; }
+    .slide-canvas { aspect-ratio: 16 / 9; min-height: 560px; max-height: 680px; }
+    @media print { body { background: #FFFFFF !important; } .no-print { display: none !important; } .slide-canvas { aspect-ratio: auto !important; height: 100vh !important; page-break-after: always !important; box-shadow: none !important; border: none !important; } }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 md:p-6 tech-bg">
+
+  <header class="w-full max-w-6xl flex items-center justify-between py-2 border-b border-slate-200 no-print text-xs text-slate-500">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-blue-600 tracking-wider">NYCU CIVIL ENGINEERING</span>
+      <span class="text-slate-300">|</span>
+      <span>碩士論文專題簡報 03：功率抑制與約束選模</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">研究生：張喬筑</span>
+      <span class="text-slate-400">指導教授：莊子毅 博士</span>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl flex-grow flex items-center justify-center my-4">
+    <div id="slideStage" class="w-full slide-canvas bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-300"></div>
+  </main>
+
+  <div id="speakerDrawer" class="w-full max-w-6xl bg-white border border-blue-200 rounded-xl p-4 shadow-lg mb-4 hidden no-print transition-all">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider mono">SPEAKER NOTES // 講者口白備忘錄 (按 S 鍵關閉)</span>
+      </div>
+      <span class="text-[11px] text-slate-400">專題 03</span>
+    </div>
+    <div id="speakerContent" class="text-xs text-slate-700 leading-relaxed max-h-32 overflow-y-auto"></div>
+  </div>
+
+  <footer class="w-full max-w-6xl flex items-center justify-between py-2 border-t border-slate-200 no-print text-xs text-slate-600">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1">
+        <button onclick="prevSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="上一頁 (←)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+        <button onclick="nextSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="下一頁 (→)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="mono font-semibold text-slate-800">
+        PAGE <span id="currentIdx" class="text-blue-600">01</span> / <span id="totalIdx">08</span>
+      </div>
+      <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 12.5%;"></div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 text-slate-500">
+      <button onclick="toggleSpeakerNotes()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">S</span><span>備忘錄</span></button>
+      <button onclick="toggleFullScreen()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">F</span><span>全螢幕</span></button>
+      <button onclick="window.print()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span>列印 PDF</span></button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = [
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">TOPIC 03 // POWER SUPPRESSION & SELECTION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-4">
+            <span class="ice-badge">碩士論文專題報告 03</span>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+              功率抑制映射機制與約束式選模<br>
+              <span class="text-blue-600">軟式保留、硬式歸零、平台式曲線與 J 目標搜尋</span>
+            </h1>
+            <p class="text-sm text-slate-600 max-w-3xl leading-relaxed">
+              探討可靠度分數向物理功率轉換的數學映射體系；對比連續軟式加權、硬式階躍歸零與 Version08 滿額平台式曲線；並在包含 29,736 種組合的約束選模體系中，深入剖析硬式低門檻暫居第一背後的客觀取捨。
+            </p>
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">映射策略空間</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">28 種 (軟式 21 + 硬式 6 + 原版)</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">綜合選模目標 J</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">遠距大車權重 0.3 + 3 道死線</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">聯合領先候選</div>
+                <div class="text-sm font-bold text-blue-600 mt-1">焦點損失 + 硬式 0.1 (J=0.6900)</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>國立陽明交通大學 土木工程學系碩士班</span>
+            <span class="mono">Constrained Search Protocol</span>
+          </div>
+        `,
+        notes: `各位老師好，本專題專門聚焦於「功率抑制映射機制與約束式選模」。我們將探討三種功率映射函數的物理特性，並呈現 29,736 種組合搜尋下的約束選模機制與深刻的客觀反思。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">01 // IN-PLACE CONSTRAINTS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">架構定位 // 原位調整</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">原位功率抑制定位與資料結構保護</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">FORMAT PRESERVATION</span>
+                <h3 class="text-sm font-bold text-slate-800">資料格式與坐標完全不變</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>維持每幀原始 <strong>150,000 點數</strong> 完全不變。</li>
+                  <li>原始空間坐標 $(x, y, z)$、點序與都卜勒值 $v$ 100% 凍結。</li>
+                  <li>來源資料浮點型態（float32/float64）原樣保留匯出。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">DOWNSTREAM TOPOLOGY</span>
+                <h3 class="text-sm font-bold text-slate-800">下游體素拓撲結構保護</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>純粹原位更新線性功率：$P'_i = P_i \times w(s_i)$。</li>
+                  <li>不進行物理刪點，確保下游 RTNH 的 0.4 米體素網格占據結構不被破壞，避免稀疏 3D 卷積拓撲空洞化。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex justify-between items-center">
+              <span><strong>關鍵結論</strong>：功率歸零不等於點消失，坐標與空間結構依然參與下游網路學習。</span>
+              <span class="mono font-semibold text-blue-700">論文第 3.1 節</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.1 節 · 資料協定與輸出約束</span>
+            <span class="mono">In-place Linear Modulation</span>
+          </div>
+        `,
+        notes: `我們的功率抑制遵循嚴格的原位調整：15 萬點的坐標和都卜勒完全不動，只修改浮點功率。這確保了下游體素特徵萃取網絡的空間拓撲不會塌陷。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">02 // MAPPING CURVES</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">映射函數 // 軟式 vs. 硬式</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">連續軟式加權與硬式階躍歸零 (圖 3-2)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3 border-l-4 border-l-blue-600">
+                <span class="text-xs font-bold text-blue-700 mono">SOFT WEIGHTING (式 3-4)</span>
+                <h3 class="text-sm font-bold text-slate-800">連續軟式曲線 (基準 W065)</h3>
+                <div class="p-2.5 bg-white rounded border border-slate-200 mono text-xs text-center">
+                  $$P' = P[\\alpha + (1-\\alpha)s^\\gamma]$$
+                </div>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <li>基準設定：$\\alpha=0.65, \\gamma=1$。</li>
+                  <li>平滑無階躍；最低分點依然保有 65% 線性功率。</li>
+                  <li>優點：防止弱回波清空；局限：高分車體點亦折損 0~35%。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-3 border-l-4 border-l-rose-500">
+                <span class="text-xs font-bold text-rose-700 mono">HARD THRESHOLDING (式 3-5)</span>
+                <h3 class="text-sm font-bold text-slate-800">硬式階躍歸零 (Hard Zeroing)</h3>
+                <div class="p-2.5 bg-white rounded border border-slate-200 mono text-xs text-center">
+                  $$P' = P \\times \\mathbb{I}(s \\ge \\tau)$$
+                </div>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <li>低於門檻 $\\tau$ 功率設為 0；門檻空間 $\\tau \\in \\{0.1 \\sim 0.9\\}$。</li>
+                  <li>非物理刪點，僅設功率為零；座標與列數依舊保留。</li>
+                  <li>優點：高分點 100% 滿額；局限：易一刀切誤殺車體。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+              必須在同一模型下公平對比兩者，不能將模型學習能力與功率公式效果混為一談。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.5 節 · 圖 3-2 功率抑制策略</span>
+            <span class="mono">Soft Continuous vs. Hard Threshold</span>
+          </div>
+        `,
+        notes: `基準 W065 最低保底 65% 功率，平滑無階躍；硬式歸零則在門檻以下直接設為零。我們在同一模型下公平對比這兩者，以釐清模型分數與映射公式的個別影響。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // VERSION08 PLATFORM</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">演算法前瞻 // VERSION08</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">Version08 平台式滿額映射設計</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-7 ice-card-blue space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">PLATFORM MAPPING FUNCTION</span>
+                <div class="text-xs font-bold text-slate-800">平台式曲線數學形式</div>
+                <div class="p-3 bg-white rounded-lg border border-blue-200 mono text-xs text-center text-blue-800 font-bold">
+                  $$w(s) = \\alpha + (1-\\alpha)\\text{clip}\\left(\\frac{s}{\\tau}, 0, 1\\right)$$
+                </div>
+                <div class="text-xs text-slate-700 leading-relaxed space-y-1">
+                  <div>· 當分數 $s \\ge \\tau$（達到較低可信門檻，如 0.2）時：保留 <strong>100% 滿額功率</strong>。</div>
+                  <div>· 當 $s < \\tau$ 時：線性過渡至非零下限 $\\alpha$（如 0.3）。</div>
+                </div>
+              </div>
+              <div class="col-span-5 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-blue-700 mono">CORE PHILOSOPHY</span>
+                  <div class="text-xs font-bold text-slate-800">解耦控制哲學</div>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    分開控制「可信點無損保留」與「低分背景抑制」，徹底消除連續軟式對車體訊號的折損，為解決遠距大車衰退提供演算法解答。
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500 italic">
+              註：此設計作為 Version08 核心改良方案，保留 Version07 現行成果以作對照。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.5 節 · 圖 3-2 平台式曲線</span>
+            <span class="mono">Platform Mapping Formulation</span>
+          </div>
+        `,
+        notes: `針對軟式加權會削弱車體回波的痛點，我們在 Version08 提出了「平台式映射曲線」：只要分數達到門檻就 100% 滿額保留，低分區提供底線保底，兼顧背景壓制與車體無損。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // OBJECTIVE J</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">選模機制 // 多目標優化</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">綜合選模目標 J 與三道不可逾越之約束 (式 3-8)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">OBJECTIVE FORMULATION</span>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 text-center mono text-xs text-blue-800 font-bold">
+                  $$J = 0.30 T_{\\text{GT}} + 0.20 T_{\\text{LiDAR}} + 0.20 Q_{\\text{pos}} + 0.30 Q_{\\text{far-truck}}$$
+                </div>
+                <div class="text-xs text-slate-600 leading-relaxed space-y-1">
+                  <div>· $T_{\\text{GT}}$ (30%)：Top5% 點落在三維物件框內比例。</div>
+                  <div>· $T_{\\text{LiDAR}}$ (20%)：Top5% 點獲近鄰光達支持比例。</div>
+                  <div>· $Q_{\\text{pos}}$ (20%)：可靠正例功率保留率。</div>
+                  <div>· <strong>$Q_{\\text{far-truck}}$ (30%)</strong>：60–80m 遠距大車宏平均功率。</div>
+                </div>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">THREE HARD CONSTRAINTS</span>
+                <div class="text-xs text-slate-700 space-y-2">
+                  <div class="p-2 rounded bg-white border border-slate-200">
+                    <strong>1. 正例功率降幅</strong>：相對基準 W065 下降不得超過 0.01 (1%)。
+                  </div>
+                  <div class="p-2 rounded bg-white border border-slate-200">
+                    <strong>2. 背景功率增幅</strong>：相對基準 W065 增加不得超過 0.01。
+                  </div>
+                  <div class="p-2 rounded bg-white border border-slate-200">
+                    <strong>3. 幾何比例變化</strong>：兩項幾何指標平均變化不得為負。
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500">
+              選模規則：三種子平均滿足約束且 J 最高者勝出，再取最接近平均之模型作為代表，拒絕單次最高分幸運種子。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.7 節 · 約束式選模目標 J</span>
+            <span class="mono">Multi-objective Constrained Selection</span>
+          </div>
+        `,
+        notes: `我們設計了嚴格的選模指標 J，特別為遠距大車設定了 0.3 的高權重，並設立了正例不降、背景不增、幾何不退步的三道死線。只有三種子平均滿足約束且 J 最高者才能入選。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // JOINT COMPARISON</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge">全域搜尋 // 表 4-2</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">29,736 種組合搜尋：硬式門檻 0.1 暫居第一</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr><th class="p-2.5">模型／損失函數</th><th class="p-2.5">硬式門檻 τ</th><th class="p-2.5">正例功率 (%)</th><th class="p-2.5">背景功率 (%)</th><th class="p-2.5">遠距大車 (%)</th><th class="p-2.5">綜合 J</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-blue-50/60 font-semibold">
+                    <td class="p-2.5 text-blue-700">焦點係數 0.75 (Focal)</td>
+                    <td class="p-2.5 mono">0.1</td>
+                    <td class="p-2.5 mono">99.99</td>
+                    <td class="p-2.5 mono text-rose-600">73.62</td>
+                    <td class="p-2.5 mono font-bold text-emerald-600">99.31</td>
+                    <td class="p-2.5 mono font-bold text-blue-800">0.6900</td>
+                  </tr>
+                  <tr><td class="p-2.5">品質焦點損失 (QFL)</td><td class="p-2.5 mono">0.1</td><td class="p-2.5 mono">99.98</td><td class="p-2.5 mono">68.99</td><td class="p-2.5 mono">98.92</td><td class="p-2.5 mono">0.6887</td></tr>
+                  <tr><td class="p-2.5">焦點係數 0.5 (Focal)</td><td class="p-2.5 mono">0.1</td><td class="p-2.5 mono">99.98</td><td class="p-2.5 mono">66.21</td><td class="p-2.5 mono">98.52</td><td class="p-2.5 mono">0.6875</td></tr>
+                  <tr><td class="p-2.5">標準焦點損失 (Focal)</td><td class="p-2.5 mono">0.1</td><td class="p-2.5 mono">99.94</td><td class="p-2.5 mono text-emerald-600">59.89</td><td class="p-2.5 mono">96.85</td><td class="p-2.5 mono">0.6825</td></tr>
+                  <tr><td class="p-2.5">QFL (beta=3)</td><td class="p-2.5 mono">0.2</td><td class="p-2.5 mono">99.94</td><td class="p-2.5 mono text-emerald-600 font-bold">57.42</td><td class="p-2.5 mono">96.97</td><td class="p-2.5 mono">0.6816</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2.5 rounded bg-blue-50 border border-blue-200 text-xs text-blue-900">
+              規模：354 模型 × 3 種子 = 1,062 模型 × 28 功率策略 = <strong>29,736 組合</strong>。焦點損失 + 硬式 0.1 暫居第一。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.3 節 · 表 4-2 聯合策略比較</span>
+            <span class="mono">Joint Search Snapshot</span>
+          </div>
+        `,
+        notes: `在聯合策略比較中，焦點損失搭配硬式門檻 0.1 暫居第一，J 達到 0.6900，正例與大車保留率接近 100%。但我們在下一頁進行冷靜客觀的取捨反思。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // DEEP REFLECTION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">客觀反思 // 取捨本質</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">硬式低門檻的高分陷阱與指標取捨</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">BACKGROUND RETENTION</span>
+                <h3 class="text-sm font-bold text-slate-800">背景功率殘留高達 73.62%</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  硬式門檻 0.1 採取了極度保守的策略，將絕大多數點全數保留。雖然推高了正例與大車保留指標，但代價是大量背景噪聲未能有效壓制。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-amber-600 mono">OBJECTIVE BIAS</span>
+                <h3 class="text-sm font-bold text-slate-800">選模目標 J 的權重妥協</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  選模目標 J 給予遠距大車 0.3 權重，使得去噪更乾淨但大車保留稍低的候選在排名上落後。這證明不能僅看 J 排名就斷定對 RTNH 最好。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700">
+              <strong>科研結論</strong>：可靠度模型與功率映射是可分離元件；硬式策略的暫時領先不否定可靠度學習，必須交由下游 RTNH 實測判定。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.3 節 · 取捨反思</span>
+            <span class="mono">Selection Trade-off Analysis</span>
+          </div>
+        `,
+        notes: `我們在論文中保持了高度的清醒。硬式 0.1 之所以拿高分，是因為它採取保守策略推高了保留率，但代價是背景殘留高達 73.6%。這暴露了選模指標的取捨，也再次凸顯了下游偵測驗證的不可替代性。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // SUMMARY</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">專題總結 // 下一步</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">功率策略與選模模組總結</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-2.5">
+                <span class="font-bold text-blue-700 mono">WHAT WE ESTABLISHED</span>
+                <h3 class="text-sm font-bold text-slate-800">已確立的成果</h3>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <li>完成 29,736 種組合搜尋體系，確立約束選模規則。</li>
+                  <li>揭示軟式加權與硬式歸零在車體保留與背景壓制上的深刻取捨。</li>
+                  <li>完成 Version08 平台式無損保留映射之數學設計。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <span class="font-bold text-blue-700 mono">WHAT NEEDS DOWNSTREAM PROOF</span>
+                <h3 class="text-sm font-bold text-slate-800">待下游實證之命題</h3>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <li>低門檻硬式策略 vs. 軟式策略在 RTNH 3D 框偵測上的真實勝負。</li>
+                  <li>Version08 平台式曲線能否在保留大車的同時壓低背景。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 text-center font-semibold">
+              下一專題：大型車遠距衰退、失敗診斷與四大競爭假說 →
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.5 節、第 3.7 節與第 4.3 節總結</span>
+            <span class="mono">Selection & Suppression Wrap-up</span>
+          </div>
+        `,
+        notes: `總結本專題：我們建立了包含 29,736 種組合的約束選模機制，並客觀指出了硬式低門檻的高分本質。下一個專題我們將深入剖析大型車的遠距衰退與四大競爭假說。謝謝各位老師！`
+      }
+    ];
+
+    let currentSlide = 1;
+    const totalSlides = slides.length;
+    function renderSlide(index) {
+      if (index < 1 || index > totalSlides) return;
+      currentSlide = index;
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide - 1].render(currentSlide, totalSlides);
+      document.getElementById('currentIdx').textContent = String(currentSlide).padStart(2, '0');
+      document.getElementById('totalIdx').textContent = String(totalSlides).padStart(2, '0');
+      document.getElementById('progressBar').style.width = ((currentSlide / totalSlides) * 100) + '%';
+      document.getElementById('speakerContent').textContent = slides[currentSlide - 1].notes;
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(stage, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false });
+      }
+    }
+    function nextSlide() { if (currentSlide < totalSlides) renderSlide(currentSlide + 1); }
+    function prevSlide() { if (currentSlide > 1) renderSlide(currentSlide - 1); }
+    function toggleSpeakerNotes() { document.getElementById('speakerDrawer').classList.toggle('hidden'); }
+    function toggleFullScreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') { e.preventDefault(); nextSlide(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+      else if (e.key === 's' || e.key === 'S') { e.preventDefault(); toggleSpeakerNotes(); }
+      else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFullScreen(); }
+    });
+    window.addEventListener('DOMContentLoaded', () => { renderSlide(1); });
+  </script>
+</body>
+</html>

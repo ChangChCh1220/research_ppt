@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>光達輔助弱監督之四維雷達可靠度估計與功率抑制（軟式去噪）</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+  <!-- KaTeX for LaTeX Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+
+  <style>
+    /* Glacial Tech Minimal Theme Styles */
+    :root {
+      --primary-blue: #2563EB;
+      --deep-navy: #0F172A;
+      --ice-blue-card: #F4F8FF;
+      --ice-blue-border: #DBEAFE;
+      --subtle-grid: #E2E8F0;
+    }
+
+    body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .slide-wrapper {
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .slide-canvas {
+      width: 100%;
+      max-width: 1200px;
+      aspect-ratio: 16 / 9;
+      background: #FFFFFF;
+      background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
+      background-size: 28px 28px;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      padding: 44px 56px;
+    }
+
+    .ice-card {
+      background-color: #F4F8FF;
+      border: 1px solid #DBEAFE;
+      border-radius: 14px;
+      padding: 18px 22px;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    /* Print Style for PDF Export (Ctrl+P) */
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .slide-wrapper {
+        padding: 0 !important;
+        min-height: auto !important;
+      }
+      .slide-canvas {
+        page-break-after: always;
+        break-after: page;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        max-width: 100% !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        aspect-ratio: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar & Progress -->
+  <div class="no-print fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-2.5 flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-3">
+      <span class="w-3 h-3 rounded-full bg-blue-600 animate-pulse"></span>
+      <span class="text-xs font-bold text-slate-800 tracking-wide uppercase mono">LLM WIKI · RESEARCH SLIDES</span>
+      <span class="text-slate-300">|</span>
+      <span class="text-xs text-slate-500 font-medium">四維雷達可靠度估計與軟式去噪</span>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-1.5 text-xs text-slate-500">
+        <span>鍵盤</span>
+        <kbd class="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 mono text-[11px]">←</kbd>
+        <kbd class="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 mono text-[11px]">→</kbd>
+        <kbd class="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 mono text-[11px]">Space</kbd>
+        <span class="ml-1">翻頁</span>
+        <span class="mx-1.5 text-slate-300">·</span>
+        <button onclick="toggleNotes()" class="hover:text-blue-600 font-medium cursor-pointer">備忘稿 (S)</button>
+        <span class="mx-1.5 text-slate-300">·</span>
+        <button onclick="window.print()" class="hover:text-blue-600 font-medium cursor-pointer">列印 PDF</button>
+      </div>
+      <div id="slideCounter" class="text-xs font-bold text-blue-600 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 mono">
+        01 / 10
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Slide Canvas Container -->
+  <div class="slide-wrapper pt-16">
+    <div id="slideStage" class="slide-canvas">
+      <!-- Injected by JavaScript -->
+    </div>
+
+    <!-- Collapsible Speaker Notes Panel -->
+    <div id="speakerNotesPanel" class="no-print hidden max-w-[1200px] w-full mt-4 bg-white border border-blue-200 rounded-2xl p-5 shadow-sm transition-all">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-600 mono">Speaker Notes（講者口白備忘稿）</span>
+        </div>
+        <span class="text-xs text-slate-400">按 S 鍵可隨時展開或收合</span>
+      </div>
+      <p id="speakerNotesText" class="text-sm text-slate-700 leading-relaxed font-sans"></p>
+    </div>
+  </div>
+
+  <script>
+    const slides = [
+      // SLIDE 1: COVER
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <span class="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mono">RESEARCH SYNTHESIS // 4D RADAR PERCEPTION</span>
+            <span class="text-xs text-slate-400 mono">[[2025-corenet]] · [[2024-radardistill]] · [[2022-radar-occupancy-prediction]]</span>
+          </div>
+
+          <div class="my-auto py-2 space-y-4">
+            <div class="w-16 h-1.5 bg-blue-600 rounded-full"></div>
+            <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              光達輔助弱監督之四維雷達<br/>
+              <span class="text-blue-600">可靠度估計與功率抑制</span>
+            </h1>
+            <p class="text-base text-slate-600 max-w-3xl leading-relaxed">
+              從粗暴幾何截斷走向連續特徵與功率軟式去噪（Soft Denoising）：保留稀疏小目標，化解感測器物理失配與負面監督。
+            </p>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+            <div class="ice-card py-3">
+              <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">去噪範式</div>
+              <div class="text-sm font-bold text-slate-800 mt-1">連續可靠度調變（軟式去噪）</div>
+            </div>
+            <div class="ice-card py-3">
+              <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">監督機制</div>
+              <div class="text-sm font-bold text-slate-800 mt-1">LiDAR 空間幾何弱監督（推論純雷達）</div>
+            </div>
+            <div class="ice-card py-3">
+              <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">核心優勢</div>
+              <div class="text-sm font-bold text-blue-600 mt-1">保留微弱邊緣結構 · 梯度全線貫通</div>
+            </div>
+          </div>
+        `,
+        notes: "各位好，今天我要探討的主題是「光達輔助弱監督下的 4D 毫米波雷達可靠度估計與功率抑制」。傳統雷達去噪習慣直接將雜訊點或低能量網格「硬刪除」，但這會嚴重傷害小目標與結構特徵。本報告將從知識庫中提煉出軟式去噪的機制、光達弱監督的原理與物理盲區，以及未來的突破方向。"
+      },
+
+      // SLIDE 2: HARD DENOISING PITFALLS
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">PROBLEM & MOTIVATION</div>
+              <h2 class="text-xl font-bold text-slate-900">傳統「硬式去噪」對四維雷達的三大致命傷</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">02 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-5 space-y-3">
+              <div class="ice-card">
+                <div class="text-xs font-bold text-slate-800 mb-1">常見硬式去噪（Hard Pruning）手法</div>
+                <ul class="text-xs text-slate-600 space-y-2 leading-relaxed">
+                  <li>• <strong>統計/半徑濾波</strong>：ROR / SOR 依鄰居點數閾值硬刪除。</li>
+                  <li>• <strong>前景機率硬截斷</strong>：L4DR 的 FAD 依 $\\mathcal{S}_i \\ge \\tau$ 直接丟棄點。</li>
+                  <li>• <strong>能量排序硬池化</strong>：K-Radar 僅保留 Top-5%/10% 功率網格。</li>
+                </ul>
+              </div>
+              <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                <strong>核心矛盾</strong>：4D 雷達本質極度稀疏，硬式刪除將造成不可逆的資訊截斷。
+              </div>
+            </div>
+
+            <div class="col-span-7 space-y-3">
+              <div class="p-3.5 rounded-xl bg-white border border-red-200 shadow-xs">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-red-600">致命傷 1：小目標邊緣點不可逆遺失</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded bg-red-50 text-red-700 mono">Recall 崩塌</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">行人和騎士原始回波僅 2~5 點，硬閾值直接將其抹殺（Dual-Radar 行人 3D AP 僅 4.55%）。</p>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-white border border-red-200 shadow-xs">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-red-600">致命傷 2：旁瓣訊號中的幾何結構被抹除</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded bg-red-50 text-red-700 mono">CORENet 核心發現</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">旁瓣能量洩漏緊密圍繞真實物體輪廓，蘊含空間幾何線索，粗暴刪除破壞物體完整度。</p>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-white border border-red-200 shadow-xs">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-red-600">致命傷 3：反向傳播梯度截斷</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded bg-red-50 text-red-700 mono">不可微分</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">非 0 即 1 的硬過濾不可導，下游偵測頭損失無法回傳指導去噪模組進行端到端優化。</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>引用來源：[[4d-radar-denoising]] · [[2025-corenet]] · [[2025-l4dr]]</span>
+            <span class="mono">Recall & Geometric Integrity</span>
+          </div>
+        `,
+        notes: "過去我們處理 4D 雷達雜訊常採用硬式截斷，例如設定一個機率門檻或直接刪除離群點。但 4D 雷達本來就極度稀疏，在行人或騎士身上可能總共就三四個點，一旦硬性濾除，後面的網路就永遠無法召回。此外，旁瓣能量其實伴隨著真實輪廓，粗暴刪除反而破壞了物體的幾何結構。"
+      },
+
+      // SLIDE 3: SOFT DENOISING CONCEPT
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">PARADIGM SHIFT</div>
+              <h2 class="text-xl font-bold text-slate-900">軟式去噪（Soft Denoising）：保留點雲，平滑衰減</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">03 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-12 grid grid-cols-3 gap-4">
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-blue-700 uppercase tracking-wide mono">01 // 保留全域幾何</div>
+                <div class="text-sm font-bold text-slate-800">零點雲刪減原則</div>
+                <p class="text-xs text-slate-600 leading-relaxed">維持輸入點雲與體素網格的完整空間度量關係，避免破壞稀疏小目標的微弱連通性。</p>
+              </div>
+
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-blue-700 uppercase tracking-wide mono">02 // 連續可靠度估計</div>
+                <div class="text-sm font-bold text-slate-800">信心權重 $w \\in [0, 1]$</div>
+                <p class="text-xs text-slate-600 leading-relaxed">神經網絡為每個體素或特徵點預測連續的可信度指標，反映真實目標 vs 旁瓣雜訊機率。</p>
+              </div>
+
+              <div class="ice-card space-y-2">
+                <div class="text-xs font-bold text-blue-700 uppercase tracking-wide mono">03 // 特徵與功率抑制</div>
+                <div class="text-sm font-bold text-slate-800">平滑衰減 $\\tilde{f} = w \\odot f$</div>
+                <p class="text-xs text-slate-600 leading-relaxed">以置信度動態調節特徵幅值或功率譜，使雜訊自然退化為弱特徵，而非斷崖式歸零。</p>
+              </div>
+            </div>
+
+            <div class="col-span-12 p-4 rounded-xl bg-white border border-blue-200 space-y-2">
+              <div class="text-xs font-bold text-slate-900 flex items-center justify-between">
+                <span>計算圖可微分性（Differentiable Optimization）</span>
+                <span class="text-blue-600 mono text-xs">$\\nabla_{\\theta} L_{\\text{det}} \\to \\tilde{f} \\to w \\to \\text{DenoiseNet}$</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                軟式去噪透過可導的乘法操作（Multiplicative Gating），讓下游 3D 檢測損失的梯度能夠順暢回傳至前置去噪網路，實現**去噪與偵測任務的端到端協同自適應**。
+              </p>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>核心公式：$\\tilde{f}_i = w_i \\cdot f_i, \\quad w_i \\in [0, 1]$</span>
+            <span class="mono">End-to-End Differentiable</span>
+          </div>
+        `,
+        notes: "軟式去噪的核心哲學是：不直接丟棄任何測量值，而是為每個體素預測一個 0 到 1 之間的連續可靠度分數 w。高置信度區域給予完整權重，雜訊區域則平滑衰減其特徵幅值。這樣既能抑制雜訊干擾，又不會徹底抹殺小目標的微弱信號，更維持了端到端可微分的訓練特性。"
+      },
+
+      // SLIDE 4: VOXEL LEVEL CONFIDENCE - CORENET
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">MECHANISM 1 · VOXEL LEVEL</div>
+              <h2 class="text-xl font-bold text-slate-900">體素級連續信心調變：CORENet HMSD-Net</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">04 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-6 space-y-3">
+              <div class="ice-card">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-bold text-blue-700 mono">HPNet（點拓撲特徵）</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded bg-blue-100/70 text-blue-800 mono">h_k ∈ ℝ^(N×128)</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">借鑑 PointNet++，採 FPS 降採樣 + $k$-NN 聚類 + MLP 傳播，彌補體素卷積損失點拓撲之缺陷。</p>
+              </div>
+
+              <div class="ice-card">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-bold text-slate-800 mono">SConvNet（稀疏幾何空間）</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded bg-slate-200/70 text-slate-800 mono">f_conv ∈ ℝ^(N×64)</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">多階段子流形稀疏卷積維持幾何稀疏度，經上採樣對齊合成複合空間特徵。</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-blue-600 text-white flex items-center justify-between">
+                <div>
+                  <div class="text-[11px] text-blue-100 font-medium">單層 MLP Noise Predictor P</div>
+                  <div class="text-xs font-bold mono mt-0.5">M_radar = P(h_k ⊕ f_conv) ∈ [0, 1]</div>
+                </div>
+                <span class="text-xs px-2 py-1 rounded bg-white/20 mono font-bold">軟式信心遮罩</span>
+              </div>
+            </div>
+
+            <div class="col-span-6 space-y-3">
+              <div class="p-4 rounded-xl bg-white border border-slate-200 space-y-2">
+                <div class="text-xs font-bold text-slate-800">消融實驗驗證：預測層數越深反而過擬合</div>
+                <div class="text-xs text-slate-600 leading-relaxed">
+                  CORENet 消融實驗證明，Noise Predictor 採用<strong>單層 MLP</strong> 達到最優表現（Car 3D AP 67.34%）；增至 2 層或 3 層因過度參數化導致過擬合，Mean AP 分別下滑 1.37% 與 1.10%。
+                </div>
+              </div>
+
+              <div class="p-4 rounded-xl bg-blue-50/60 border border-blue-200 space-y-1.5">
+                <div class="text-xs font-bold text-blue-800">特徵編碼去噪成果（Dual-Radar 測試集）</div>
+                <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                  <div>• CasA-V Car 3D AP：<strong class="text-blue-700">14.81% → 49.46%</strong></div>
+                  <div>• CasA-V Car BEV AP：<strong class="text-blue-700">16.87% → 54.38%</strong></div>
+                  <div>• 超越傳統 ROR 濾波：<strong class="text-slate-700">+4.75% Mean 3D</strong></div>
+                  <div>• 超越傳統 SOR 濾波：<strong class="text-slate-700">+6.38% Mean 3D</strong></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>架構來源：[[corenet]] · [[2025-corenet]]</span>
+            <span class="mono">Single-layer MLP Predictor</span>
+          </div>
+        `,
+        notes: "知識庫中的 CORENet 是體素級軟式去噪的典型代表。它利用 HPNet 保留點雲拓撲，SConvNet 提取空間特徵，再由單層 MLP 輸出連續信心遮罩 M_radar。這是一個連續的機率分數，用來在特徵層面編碼並壓制雜訊，在 Dual-Radar 資料集上成功將車輛 3D AP 從 14.81% 提升至 49.46%。"
+      },
+
+      // SLIDE 5: BEV FEATURE LEVEL DISTILLATION - RADARDISTILL
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">MECHANISM 2 · BEV FEATURE LEVEL</div>
+              <h2 class="text-xl font-bold text-slate-900">特徵空間軟式引導：RadarDistill 之 AFD 與 PFD</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">05 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-12 p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-slate-800">核心痛點：雷達非空 Pillar 僅 LiDAR 約 10%</span>
+                <p class="text-xs text-slate-500 mt-0.5">直接硬對齊會迫使雷達在 90% 的空白柱狀區域擬合雜訊；高階特徵更存在巨大數值量級差異。</p>
+              </div>
+              <span class="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold mono">CMA 稠密化搭建橋樑</span>
+            </div>
+
+            <div class="col-span-6 space-y-2.5">
+              <div class="ice-card">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-blue-700 mono">AFD（活化區連續加權）</span>
+                  <span class="text-[11px] font-semibold text-slate-600">低階 BEV 蒸餾</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  將特徵空間劃分為活化區 $AR$ 與非活化區 $IR$，引入面積動態權重 $\\rho = N_{AR}/N_{IR}$ 平衡背景抑制與目標保留：
+                  <span class="block text-center my-1 font-bold text-blue-800 mono text-[11px]">W_sep = α (若 AR), &nbsp; ρ·β (若 IR)</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="col-span-6 space-y-2.5">
+              <div class="ice-card">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-blue-700 mono">PFD（通道 Softmax 分佈對齊）</span>
+                  <span class="text-[11px] font-semibold text-slate-600">高階 BEV 蒸餾</span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  利用 Softmax 將高階特徵正規化為通道機率分佈 $S^{(h_m)} = \\text{Softmax}(F^{(h_m)})$，消解模態間數值量級鴻溝：
+                  <span class="block text-center my-1 font-bold text-blue-800 mono text-[11px]">Car AP: 39.9% → 46.1% (+6.2%)</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>來源：[[radardistill]] · [[2024-radardistill]]</span>
+            <span class="mono">nuScenes Car AP 54.0%</span>
+          </div>
+        `,
+        notes: "RadarDistill 則在更宏觀的 BEV 特徵層面展現了軟式約束的威力。由於雷達特徵有 90% 都是空的，直接做像素對齊根本行不通。RadarDistill 透過 CMA 稠密化，並在 AFD 中使用連續面積權重，在高階 PFD 中使用通道 Softmax 機率分佈對齊，成功跨越了跨模態的數值懸殊，使純雷達在 nuScenes 上 Car AP 達到 54.0%。"
+      },
+
+      // SLIDE 6: MATHEMATICAL FOUNDATION - GENERALIZED FOCAL LOSS
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">MATHEMATICAL FORMULATION</div>
+              <h2 class="text-xl font-bold text-slate-900">連續可靠度估計之數學基石：Generalized Focal Loss</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">06 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-6 space-y-3">
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200">
+                <div class="text-xs font-bold text-slate-500 uppercase tracking-wide">傳統離散 Focal Loss 的困境</div>
+                <div class="text-xs text-slate-700 mt-1 leading-relaxed">
+                  標準 FL 僅接受離散二元標籤 $y \\in \\{0, 1\\}$，強迫神經網路做出非黑即白的極端決策，無法表達雷達點「半可信 / 邊緣回波」的真實物理狀態。
+                </div>
+              </div>
+
+              <div class="ice-card border-blue-200 space-y-1.5">
+                <div class="text-xs font-bold text-blue-800">Quality Focal Loss (QFL) 公式</div>
+                <div class="text-xs text-slate-900 font-semibold mono py-1">
+                  $\\text{QFL}(\\sigma) = -|y - \\sigma|^\\beta \\big((1 - y)\\log(1 - \\sigma) + y\\log(\\sigma)\\big)$
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  以連續真值 $y \\in [0, 1]$ 進行監督，動態調變項 $|y - \\sigma|^\\beta$ 抑制預測接近真值的容易樣本。
+                </p>
+              </div>
+            </div>
+
+            <div class="col-span-6 space-y-3">
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2">
+                <div class="text-xs font-bold text-blue-700">數學極小值收斂保證</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  經嚴格求導，QFL 的一階導數全域零點唯一滿足：
+                  <span class="block text-center my-1 font-bold text-blue-600 mono text-sm">$\\sigma^* = y$</span>
+                  數學上嚴格保證預測值 $\\sigma$ 是連續目標 $y$ 的無偏估計，徹底消除分類與定位品質分離導致的假陽性高分噪點。
+                </p>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200">
+                <div class="text-xs font-bold text-slate-900">對四維雷達軟式去噪的直接啟發</div>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                  為雷達點預測「軟可靠度」時，應拋棄二元交叉熵，全面改採 QFL 架構，使網路輸出平滑逼近真實幾何 IoU 或光達局部點密度。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>理論來源：[[generalized-focal-loss]] · [[2020-generalized-focal-loss]]</span>
+            <span class="mono">Continuous Unbiased Estimation</span>
+          </div>
+        `,
+        notes: "要訓練神經網絡準確預測連續可靠度，傳統只支援 0 和 1 的 Focal Loss 是不夠的。NeurIPS 2020 提出的 Generalized Focal Loss (QFL) 將標籤推廣為任意連續值 y，其動態調變項能抑制容易樣本，並在數學上嚴格收斂於預測值等於真實可靠度，為我們的軟式去噪提供了絕佳的理論工具。"
+      },
+
+      // SLIDE 7: WEAK SUPERVISION MECHANISM
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">WEAK SUPERVISION PIPELINE</div>
+              <h2 class="text-xl font-bold text-slate-900">光達輔助弱監督：以空間幾何一致性為代理真值</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">07 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-7 space-y-3">
+              <div class="ice-card space-y-1.5">
+                <div class="text-xs font-bold text-blue-800">為何是「弱監督（Weak Supervision）」？</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  物理世界中無人能為每個雷達點標記絕對真值。LiDAR 扮演的並非 Ground Truth，而是藉由<strong>高空間解析度的幾何一致性</strong>提供代理監督訊號（Proxy Signal）。
+                </p>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-1.5">
+                <div class="text-xs font-bold text-slate-800">KDTree 空間半徑查詢（CORENet 機制）</div>
+                <div class="p-2 rounded bg-slate-50 mono text-xs text-blue-700">
+                  N(p_i) = { q_j ∈ Q | ‖p_i - q_j‖_2 &lt; τ }, &nbsp; τ = 0.5m
+                </div>
+                <div class="text-xs text-slate-600 leading-relaxed pt-1">
+                  若雷達點 $p_i$ 在半徑 $\\tau$ 內存在至少一個 LiDAR 點，則標記 $M_{\\text{gt}}(i) = 1$，否則為 $0$；以 Smooth $L_1$ 損失端到端監督雷達網路。
+                </div>
+              </div>
+            </div>
+
+            <div class="col-span-5 flex flex-col justify-between space-y-3">
+              <div class="p-4 rounded-xl bg-blue-600 text-white space-y-2 my-auto">
+                <div class="text-xs font-semibold text-blue-100 uppercase tracking-wide">推論階段徹底解耦</div>
+                <div class="text-lg font-bold">100% Radar-Only</div>
+                <p class="text-xs text-blue-100 leading-relaxed">
+                  訓練完成後，KDTree 與 LiDAR 感測器完全移除。車端部署零額外感測器成本、零對齊延遲，全天候純雷達高速推論。
+                </p>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500">
+                對比融合模型：省去車載昂貴 LiDAR 硬體與 96ms 高延遲。
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>來源：[[cross-modal-supervision]] · [[2025-corenet]]</span>
+            <span class="mono">Training-Only LiDAR Supervision</span>
+          </div>
+        `,
+        notes: "為什麼說是光達「弱監督」？因為我們無法取得雷達回波中哪些點是絕對雜訊的精準標籤，只能藉由 LiDAR 高密度的幾何一致性作為代理訊號。在訓練時用 KDTree 找出雷達點半徑 0.5 米內是否有光達點來監督網路；而到了推論階段，LiDAR 完全功成身退，車載系統以 100% 純雷達高效運作。"
+      },
+
+      // SLIDE 8: NEGATIVE SUPERVISION TRAPS
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-amber-600 mono">PHYSICAL DISCREPANCY & CAUTION</div>
+              <h2 class="text-xl font-bold text-slate-900">感測器物理失配引發的「負面弱監督」陷阱</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">08 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-12 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+              <strong>來自 Kung et al. (RA-L 2022) 的關鍵警示</strong>：LiDAR 絕非完美真值！盲目以 LiDAR 為目標會迫使雷達產生幻覺或抹煞其穿透力。
+            </div>
+
+            <div class="col-span-6 p-4 rounded-xl bg-white border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-red-600">陷阱 1：微小結構引發幻覺（Hallucination）</span>
+                <span class="text-[11px] px-2 py-0.5 rounded bg-red-50 text-red-700 mono">雷達無 · 光達有</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                細樹枝、草叢有 LiDAR 點但雷達回波極弱；若強制雷達學習，網路會在雜訊空白區虛構假陽性預測。
+              </p>
+              <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-900">
+                <strong>解決對策</strong>：引入雷達功率門檻過濾（Power Filtering），剔除回波低於 $p$（$0.08 \\sim 0.12$）的無效 LiDAR 點。
+              </div>
+            </div>
+
+            <div class="col-span-6 p-4 rounded-xl bg-white border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-red-600">陷阱 2：遮擋物透視訊號被誤殺（Suppression）</span>
+                <span class="text-[11px] px-2 py-0.5 rounded bg-red-50 text-red-700 mono">雷達透 · 光達擋</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                毫米波能穿透前車底盤或雨霧，而 LiDAR 嚴格視距（遮擋後方全空）；直接監督會將穿透訊號誤標為 0。
+              </p>
+              <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-900">
+                <strong>解決對策</strong>：極座標滑動窗口推論，搭配非對稱 Tversky 損失（$\\beta=0.6$）保護遠距與透視特徵。
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>警示來源：[[2022-radar-occupancy-prediction]] · [[cross-modal-supervision]]</span>
+            <span class="mono">Avoid Negative Supervision</span>
+          </div>
+        `,
+        notes: "這裡有一個至關重要的物理陷阱：LiDAR 真的能當作完美的真值嗎？Kung 等人在 2022 年的研究給了我們重大啟示。LiDAR 無法穿透障礙物，但雷達可以；如果我們直接拿 LiDAR 當真值，就會把雷達穿透前車所探測到的珍貴回波誤當成雜訊給予懲罰！此外，樹枝草叢會反射光達但雷達看不到，強迫學習會引發幻覺。因此弱監督必須配合功率過濾與極座標窗口設計。"
+      },
+
+      // SLIDE 9: RESEARCH GAPS
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">RESEARCH GAPS</div>
+              <h2 class="text-xl font-bold text-slate-900">知識庫現存研究缺口與未來突破方向</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">09 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 my-auto">
+            <div class="ice-card flex flex-col justify-between space-y-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold mono">GAP 01 // 軟真值生成</span>
+                <div class="text-sm font-bold text-slate-800 mt-2">連續型弱監督真值缺失</div>
+                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  既有文獻（CORENet）仍依賴二元 $\{0, 1\}$ 遮罩；尚未探索直接利用 LiDAR 局部點雲密度（Point Density）或反射率產生平滑連續真值 $M_{\\text{gt}} \\in [0, 1]$。
+                </p>
+              </div>
+              <div class="text-[11px] text-blue-600 font-semibold border-t border-blue-200/60 pt-2">
+                [Wiki 尚無此部分資料]
+              </div>
+            </div>
+
+            <div class="ice-card flex flex-col justify-between space-y-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold mono">GAP 02 // 原始頻譜抑制</span>
+                <div class="text-sm font-bold text-slate-800 mt-2">4DRT 原始功率譜端到端軟衰減</div>
+                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  Enhanced K-Radar 仍採離線 Top-5% 硬池化；尚無在原始都卜勒-距離-方位-俯仰張量上端到端預測動態功率衰減矩陣 $W(v, r, \\theta, \\phi)$ 的模型。
+                </p>
+              </div>
+              <div class="text-[11px] text-blue-600 font-semibold border-t border-blue-200/60 pt-2">
+                [Wiki 尚無此部分資料]
+              </div>
+            </div>
+
+            <div class="ice-card flex flex-col justify-between space-y-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold mono">GAP 03 // 生成式去噪</span>
+                <div class="text-sm font-bold text-slate-800 mt-2">不確定度與擴散去噪模型</div>
+                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  尚未收錄顯式估計雷達座標空間高斯方差（Spatial Covariance）的感知模型，以及基於 DDPM 的條件去噪生成文獻。
+                </p>
+              </div>
+              <div class="text-[11px] text-blue-600 font-semibold border-t border-blue-200/60 pt-2">
+                [Wiki 尚無此部分資料]
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>誠實標記知識缺口 · 指引研究前瞻方向</span>
+            <span class="mono">Open Research Frontiers</span>
+          </div>
+        `,
+        notes: "梳理我們現有的知識庫，可以精準定位出三個尚未被攻克的研究缺口：第一，目前光達監督多半還是二元 0 和 1，缺少利用光達點雲密度產生連續平滑真值的機制；第二，在 4D 雷達張量上，目前還停留在 Top-5% 能量的硬式切分，缺乏在原始頻譜上做連續功率衰減的模型；第三，顯式不確定性估計與擴散模型尚未完全融入此體系。這正是我們值得深入切入的方向。"
+      },
+
+      // SLIDE 10: CONCLUSION & SUGGESTED PAPERS
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">CONCLUSION & OUTLOOK</div>
+              <h2 class="text-xl font-bold text-slate-900">總結與建議參考文獻（可點擊下載 · 待 Wiki 化）</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">10 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-5 space-y-2.5">
+              <div class="ice-card space-y-1.5">
+                <div class="text-xs font-bold text-blue-800">三大研究共識</div>
+                <ul class="text-xs text-slate-600 space-y-1.5 leading-relaxed">
+                  <li>• <strong>軟式去噪勝於硬式去噪</strong>：保護稀疏小目標，維持幾何完整性與可導性。</li>
+                  <li>• <strong>弱監督需避開物理失配</strong>：防範樹枝微結構幻覺與透視特徵誤殺。</li>
+                  <li>• <strong>QFL 是理想數學工具</strong>：為連續可靠度預測提供無偏極小值收斂。</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="col-span-7 space-y-2">
+              <div class="text-xs font-bold text-slate-800 uppercase tracking-wide">建議下載並納入 Wiki 之最新前沿文獻</div>
+              
+              <div class="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-800">ELMAR (arXiv:2506.17958)</div>
+                  <div class="text-[11px] text-slate-500">4D 雷達動態感知與跨模態不確定度估計</div>
+                </div>
+                <a href="https://arxiv.org/pdf/2506.17958.pdf" target="_blank" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold mono hover:bg-blue-700">下載 PDF</a>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-800">V2X-R (CVPR 2024 / arXiv:2411.08402)</div>
+                  <div class="text-[11px] text-slate-500">基於去噪擴散模型（DDPM）之連續雷達特徵補全</div>
+                </div>
+                <a href="https://arxiv.org/pdf/2411.08402.pdf" target="_blank" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold mono hover:bg-blue-700">下載 PDF</a>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-800">HyperDet (arXiv:2602.11554)</div>
+                  <div class="text-[11px] text-slate-500">前景擴散與跨感測器共識，擺脫硬式 CFAR 截斷</div>
+                </div>
+                <a href="https://arxiv.org/pdf/2602.11554.pdf" target="_blank" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold mono hover:bg-blue-700">下載 PDF</a>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-800">RAF (arXiv:2607.04587)</div>
+                  <div class="text-[11px] text-slate-500">全天候畫素/實例級可靠度動態加權監督機制</div>
+                </div>
+                <a href="https://arxiv.org/pdf/2607.04587.pdf" target="_blank" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold mono hover:bg-blue-700">下載 PDF</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>報告完畢 · 歡迎交流討論</span>
+            <span class="mono">Q&A · Thank You</span>
+          </div>
+        `,
+        notes: "最後總結：軟式去噪是 4D 毫米波雷達邁向高精度與保留小目標的核心方向。透過連續可靠度調變，我們能在抑制雜訊的同時保全珍貴的邊緣結構。針對剛才提出的研究缺口，我整理了四篇最新的前沿文獻，都附上了直接下載 PDF 的連結，後續我們可以將其存入 raw 資料夾進行 Wiki 化，進一步豐富我們的研究體系。謝謝大家！"
+      }
+    ];
+
+    let currentSlide = 0;
+    let showNotes = false;
+
+    function renderSlide() {
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide].render();
+      document.getElementById('slideCounter').textContent = `${String(currentSlide + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+      document.getElementById('speakerNotesText').textContent = slides[currentSlide].notes;
+
+      // Re-trigger KaTeX rendering for dynamic content
+      if (window.renderMathInElement) {
+        renderMathInElement(stage, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        renderSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        renderSlide();
+      }
+    }
+
+    function toggleNotes() {
+      showNotes = !showNotes;
+      const panel = document.getElementById('speakerNotesPanel');
+      panel.classList.toggle('hidden', !showNotes);
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        toggleNotes();
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
+      }
+    });
+
+    // Initial render
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSlide();
+    });
+  </script>
+</body>
+</html>

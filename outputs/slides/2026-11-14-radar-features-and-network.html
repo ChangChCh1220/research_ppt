@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雷達原生特徵工程與局部可靠度網路 — 碩士論文專題簡報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; color: #0F172A; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .tech-bg { background-color: #FFFFFF; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; }
+    .ice-card { background: #F4F8FF; border: 1px solid #DBEAFE; border-radius: 12px; padding: 18px; }
+    .ice-card-blue { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 18px; }
+    .ice-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; }
+    .slide-canvas { aspect-ratio: 16 / 9; min-height: 560px; max-height: 680px; }
+    @media print { body { background: #FFFFFF !important; } .no-print { display: none !important; } .slide-canvas { aspect-ratio: auto !important; height: 100vh !important; page-break-after: always !important; box-shadow: none !important; border: none !important; } }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 md:p-6 tech-bg">
+
+  <header class="w-full max-w-6xl flex items-center justify-between py-2 border-b border-slate-200 no-print text-xs text-slate-500">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-blue-600 tracking-wider">NYCU CIVIL ENGINEERING</span>
+      <span class="text-slate-300">|</span>
+      <span>碩士論文專題簡報 02：原生特徵與可靠度網路</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">研究生：張喬筑</span>
+      <span class="text-slate-400">指導教授：莊子毅 博士</span>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl flex-grow flex items-center justify-center my-4">
+    <div id="slideStage" class="w-full slide-canvas bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-300"></div>
+  </main>
+
+  <div id="speakerDrawer" class="w-full max-w-6xl bg-white border border-blue-200 rounded-xl p-4 shadow-lg mb-4 hidden no-print transition-all">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider mono">SPEAKER NOTES // 講者口白備忘錄 (按 S 鍵關閉)</span>
+      </div>
+      <span class="text-[11px] text-slate-400">專題 02</span>
+    </div>
+    <div id="speakerContent" class="text-xs text-slate-700 leading-relaxed max-h-32 overflow-y-auto"></div>
+  </div>
+
+  <footer class="w-full max-w-6xl flex items-center justify-between py-2 border-t border-slate-200 no-print text-xs text-slate-600">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1">
+        <button onclick="prevSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="上一頁 (←)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+        <button onclick="nextSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="下一頁 (→)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="mono font-semibold text-slate-800">
+        PAGE <span id="currentIdx" class="text-blue-600">01</span> / <span id="totalIdx">08</span>
+      </div>
+      <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 12.5%;"></div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 text-slate-500">
+      <button onclick="toggleSpeakerNotes()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">S</span><span>備忘錄</span></button>
+      <button onclick="toggleFullScreen()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">F</span><span>全螢幕</span></button>
+      <button onclick="window.print()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span>列印 PDF</span></button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = [
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">TOPIC 02 // FEATURES & ARCHITECTURE</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-4">
+            <span class="ice-badge">碩士論文專題報告 02</span>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+              雷達原生特徵工程與局部可靠度網路<br>
+              <span class="text-blue-600">純雷達推論、局部編碼與都卜勒干擾剖析</span>
+            </h1>
+            <p class="text-sm text-slate-600 max-w-3xl leading-relaxed">
+              在推論端 100% 依賴雷達的嚴格約束下，設計 14 維中心 + 10 維局部鄰域原生特徵；透過輕量化雙分支 MLP 與通道最大值池化摘要，實現逐點可靠度高精度估計，並深入探討「移除顯式都卜勒提升 AP 至 68.46%」的實證機理。
+            </p>
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">純雷達特徵</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">14D 中心 + 10D 鄰域 (K=16)</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">網路架構</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">雙分支 MLP + MaxPool (192D)</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">關鍵突破</div>
+                <div class="text-sm font-bold text-blue-600 mt-1">移除都卜勒 AP 達 68.46%</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>國立陽明交通大學 土木工程學系碩士班</span>
+            <span class="mono">Radar-Only Inference</span>
+          </div>
+        `,
+        notes: `各位老師好，本專題專門探討論文在「雷達原生特徵工程與局部可靠度網路」上的設計與實證。我們將介紹如何在推論端完全不使用光達的前提下，設計高鑑別力的原生特徵與輕量化神經網路，並深入剖析「移除都卜勒特徵使代理 AP 暴增至 68.46%」的物理根因。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">01 // CENTER FEATURES</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">特徵分支 // 中心點 14D</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">中心點 14 維原生特徵分支 (表 3-3)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-2.5">
+                <span class="text-xs font-bold text-blue-700 mono">GEOMETRY & ENERGY</span>
+                <h3 class="text-sm font-bold text-slate-800">空間位置與能量尺度</h3>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed font-mono">
+                  <li>x, y, z：三維直角空間坐標 (m)</li>
+                  <li>P：原始非負線性反射功率</li>
+                  <li>log1p(P)：自然對數轉換 log(1+P)，平滑數值分佈</li>
+                  <li>r, azimuth, elevation：球面坐標系三維距離與角度</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <span class="text-xs font-bold text-blue-700 mono">DYNAMICS & DENSITY</span>
+                <h3 class="text-sm font-bold text-slate-800">動態運動與局部結構統計</h3>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed font-mono">
+                  <li>Doppler, |Doppler|：徑向速度與其絕對值</li>
+                  <li>power_percentile：同幀內功率排序百分位</li>
+                  <li>d_knn1, d_knn3_mean：最近鄰與前三鄰均距</li>
+                  <li>density_0.8m：0.8 公尺半徑內局部點雲密度</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700">
+              <strong>設計亮點</strong>：加入對數轉換與全幀百分位排序，使模型能適應跨場景的能量動態範圍；同時預計算局部密度，單點亦包含周邊結構資訊。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.4.1 節 · 表 3-3 中心特徵</span>
+            <span class="mono">Center Point 14D Representation</span>
+          </div>
+        `,
+        notes: `中心點 14 維特徵包含了座標、能量、球面幾何與局部密度。特別是對數轉換與百分位排序，大幅穩定了不同場景下雷達功率的動態範圍。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">02 // NEIGHBOR FEATURES</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">特徵分支 // 局部鄰域 10D</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">局部鄰點 10 維特徵分支 (K=16, r=2m)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">QUERY PARAMETERS</span>
+                <h3 class="text-sm font-bold text-slate-800">度量空間查詢機制</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>在 2 公尺半徑內查詢最多 16 個鄰近雷達點，排除中心點本身。</li>
+                  <li>不足 16 點以零向量補齊，並以 <code>valid</code> 遮罩嚴格區隔。</li>
+                  <li>正規化統計量<strong>嚴格僅由 2,250 幀訓練集計算</strong>。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-3 font-mono">
+                <span class="text-xs font-bold text-blue-700 mono">10D RELATIVE ATTRIBUTES</span>
+                <h3 class="text-sm font-bold text-slate-800">回波一致性特徵清單</h3>
+                <div class="p-3 bg-white rounded border border-slate-200 text-xs text-slate-700 space-y-1">
+                  <div>· dx, dy, dz, rel_distance (相對幾何)</div>
+                  <div>· p_nb, delta_p, percentile_nb (強度一致)</div>
+                  <div>· v_nb, delta_v (都卜勒速度差)</div>
+                  <div>· valid (有效標記，非補零點)</div>
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+              <strong>核心價值</strong>：讓神經網路具備感知局部回波是否具有連續幾何輪廓與相同運動趨勢的能力。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.4.1 節 · 表 3-3 鄰點特徵</span>
+            <span class="mono">Neighborhood Consistency Features</span>
+          </div>
+        `,
+        notes: `鄰域特徵在 2 米範圍內抓取 16 個鄰點，計算相對幾何與都卜勒差值。這使神經網路能夠捕捉「一群點是否具有同一個運動目標的連續性」。所有特徵標準化均嚴格僅由訓練集估計。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // NETWORK PIPELINE</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">網路架構 // 局部編碼</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">局部可靠度神經網路流水線 (圖 3-1)</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-7 ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">DUAL-BRANCH ARCHITECTURE</span>
+                <div class="space-y-2 text-xs">
+                  <div class="p-2.5 rounded bg-white border border-slate-200 flex justify-between items-center">
+                    <span>中心點特徵分支 (14D)</span>
+                    <span class="mono text-blue-700 font-bold">MLP 14 → 64</span>
+                  </div>
+                  <div class="p-2.5 rounded bg-white border border-slate-200 flex justify-between items-center">
+                    <span>16 鄰點共享分支 (16 × 10D)</span>
+                    <span class="mono text-blue-700 font-bold">MLP 10 → 64 → 128 (MaxPool) → 128D</span>
+                  </div>
+                  <div class="p-2.5 rounded bg-blue-50 border border-blue-200 flex justify-between items-center">
+                    <span>融合與分數預測 (192D)</span>
+                    <span class="mono text-blue-800 font-bold">MLP 192 → 128 → 64 → 1 → Sigmoid</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-span-5 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-blue-700 mono">MAX-POOLING NATURE</span>
+                  <div class="text-xs font-bold text-slate-800">通道最大值池化機制</div>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    在 16 個鄰點維度上取通道特徵最大值，提煉出 128 維的幾何與動態一致性摘要。此處是隱藏通道特徵池化，絕非只保留功率最大的鄰點。
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500 italic">
+              優勢：無複雜集合抽象層與特徵傳播，單幀 150,000 點推論極為迅速，符合車載即時要求。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.4.2 節 · 圖 3-1 網路架構</span>
+            <span class="mono">Local Point Reliability MLP</span>
+          </div>
+        `,
+        notes: `網路設計非常精練。中心分支升維至 64 維，鄰點分支經逐點編碼後取通道最大值池化得到 128 維摘要，融合後經兩層 MLP 輸出可靠度分數。沒有複雜的層次結構，保持了極高的推論效率。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // LOSS & OPTIMIZATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">訓練設定 // 軟損失函數</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">加權軟目標交叉熵損失與 AdamW 優化 (式 3-3)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">WEIGHTED SOFT BCE LOSS</span>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 text-center mono text-xs text-blue-800 font-bold">
+                  $$L = \\frac{\\sum_i a_i [ -t_i \\log s_i - (1-t_i) \\log(1-s_i) ]}{\\sum_i a_i}$$
+                </div>
+                <div class="text-xs text-slate-600 leading-relaxed space-y-1">
+                  <div>· 軟目標 $t_i$：正例 0.95，負例 0.05（弱監督軟標籤）。</div>
+                  <div>· 實作直接以 logits 計算，防止數值下溢與梯度飽和。</div>
+                </div>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">OPTIMIZATION HYPERPARAMETERS</span>
+                <div class="text-xs text-slate-700 space-y-1.5">
+                  <div class="flex justify-between"><span>優化器：</span><strong class="mono text-blue-700">AdamW (Loshchilov, 2019)</strong></div>
+                  <div class="flex justify-between"><span>學習率 / 權重衰減：</span><strong class="mono">0.0003 / 0.0001</strong></div>
+                  <div class="flex justify-between"><span>訓練輪數 / 批次：</span><strong class="mono">4 輪 / 4,096 中心點</strong></div>
+                  <div class="flex justify-between"><span>梯度裁剪 / Dropout：</span><strong class="mono">L2 範數 5 / 0.1</strong></div>
+                  <div class="flex justify-between"><span>隨機種子：</span><strong class="mono text-slate-600">3 個種子重複評估</strong></div>
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+              硬體與環境：WSL2 Ubuntu 24.04、RTX 4080 (16GB)、PyTorch 2.4.1、CUDA 12.1。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.4.3 節 · 表 3-4 訓練超參數</span>
+            <span class="mono">Weighted Soft BCE & AdamW Setup</span>
+          </div>
+        `,
+        notes: `我們採用加權軟式二元交叉熵損失，直接以 logits 形式進行穩定數值計算。配合 AdamW 優化器與 4 個 epoch 的訓練預算，在 RTX 4080 單卡上快速收斂。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // EMPIRICAL BREAKTHROUGH</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">核心實證發現 // 表 4-1</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">移除顯式都卜勒之謎：代理 AP 達 68.46%</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr><th class="p-2.5">設定 (固定 W065 軟式)</th><th class="p-2.5">代理 AP ± SD (%)</th><th class="p-2.5">Top5% 原框 (%)</th><th class="p-2.5">正例功率 (%)</th><th class="p-2.5">大車保留 (%)</th><th class="p-2.5">綜合 J</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-blue-50/60 font-semibold">
+                    <td class="p-2.5 text-blue-700">移除顯式 Doppler (Drop Doppler)</td>
+                    <td class="p-2.5 mono text-blue-700">68.46 ± 0.74</td>
+                    <td class="p-2.5 mono">43.35</td>
+                    <td class="p-2.5 mono">96.68</td>
+                    <td class="p-2.5 mono">87.13</td>
+                    <td class="p-2.5 mono font-bold text-blue-800">0.6540</td>
+                  </tr>
+                  <tr><td class="p-2.5">降低負正比至 4</td><td class="p-2.5 mono">64.56 ± 0.87</td><td class="p-2.5 mono">42.05</td><td class="p-2.5 mono">96.66</td><td class="p-2.5 mono font-bold text-emerald-600">86.74</td><td class="p-2.5 mono">0.6462</td></tr>
+                  <tr><td class="p-2.5">增大鄰點數 K=32</td><td class="p-2.5 mono">65.04 ± 0.67</td><td class="p-2.5 mono font-bold text-emerald-600">44.86</td><td class="p-2.5 mono">95.59</td><td class="p-2.5 mono">84.36</td><td class="p-2.5 mono">0.6451</td></tr>
+                  <tr class="bg-slate-50 text-slate-500"><td class="p-2.5">基準模型 (Baseline)</td><td class="p-2.5 mono">64.63 ± 0.88</td><td class="p-2.5 mono">41.41</td><td class="p-2.5 mono">96.06</td><td class="p-2.5 mono">84.58</td><td class="p-2.5 mono">0.6376</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 leading-relaxed">
+              <strong>震撼結果</strong>：移除都卜勒通道後，代理 AP 由 64.63% 暴增至 68.46%，綜合目標 J 暫居全場第一！這引發了深刻的科學反思：都卜勒難道在雷達偵測中毫無價值嗎？
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.2 節 · 表 4-1 開發成果</span>
+            <span class="mono">Doppler-Drop Phenomenon</span>
+          </div>
+        `,
+        notes: `在 115 組三種子評估中，最令人意外的成果是「移除顯式都卜勒」奪得冠軍，代理 AP 從 64.63% 大幅拉升到 68.46%。難道都卜勒對雷達真的沒有用嗎？我們在下一頁進行深度物理剖析。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // DEEP EXPLANATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">機理解構 // 物理本質</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">深度剖析：自車運動未補償干擾與表徵形式</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">PHYSICAL INTERFERENCE 01</span>
+                <h3 class="text-sm font-bold text-slate-800">自車本體運動未補償的混淆</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  K-Radar 原始都卜勒為視線方向的徑向相對速度。當自車行駛時，靜止物體（路樹、護欄）因與雷達夾角不同而產生非零徑向速度，在特徵空間中與低速動態車輛發生混淆。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-amber-600 mono">LEARNING CAPACITY 02</span>
+                <h3 class="text-sm font-bold text-slate-800">有限預算下的注意力分散</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  在 4 輪的有限訓練預算下，神經網路試圖擬合複雜的局部都卜勒速度差，反而干擾了對穩定幾何結構特徵的學習；移除都卜勒後，模型聚焦於空間結構，代理 AP 顯著提升。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 flex justify-between items-center">
+              <span><strong>關鍵界線</strong>：僅從網路輸入中移除顯式通道，輸出點雲仍完整保留原始都卜勒數值供 RTNH 使用！</span>
+              <span class="mono font-semibold text-blue-700">Representation Study</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.2 節 · 都卜勒機理剖析</span>
+            <span class="mono">Ego-Motion Doppler Distortion</span>
+          </div>
+        `,
+        notes: `深入分析揭露了本質：未經自車運動補償的徑向速度，在有限訓練預算下對神經網路構成了噪聲干擾。這不是都卜勒無用，而是原始未補償的特徵表徵形式干擾了弱監督學習。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // SUMMARY & ROADMAP</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">專題總結 // 網路演進</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">特徵與網路模組總結與後續方向</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4 text-xs">
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-blue-700 mono">CURRENT STATUS</span>
+                <div class="font-bold text-slate-800">純雷達推論成立</div>
+                <p class="text-slate-600 leading-relaxed">
+                  14D 中心 + 10D 鄰域特徵在無光達條件下達到 68.46% 代理 AP，推論快速且記憶體消耗極低。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-blue-700 mono">NEXT UPGRADE 01</span>
+                <div class="font-bold text-slate-800">自車運動補償都卜勒</div>
+                <p class="text-slate-600 leading-relaxed">
+                  未來可引入自車速度向量進行自車運動補償，將徑向速度修正為絕對動態特徵。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-blue-700 mono">NEXT UPGRADE 02</span>
+                <div class="font-bold text-slate-800">快取式特徵蒸餾</div>
+                <p class="text-slate-600 leading-relaxed">
+                  若引入更複雜的光達教師蒸餾，先離線快取分數，突破單卡 16GB 顯存瓶頸。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 text-center font-semibold">
+              下一專題：功率抑制映射策略（軟式、硬式與平台式）與約束式選模 J →
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.4 節與第 5.3 節</span>
+            <span class="mono">Network Architecture Roadmap</span>
+          </div>
+        `,
+        notes: `總結本專題：我們確立了純雷達特徵網路的架構與都卜勒干擾根因。下一專題我們將討論分數如何轉換為功率抑制曲線。謝謝各位老師！`
+      }
+    ];
+
+    let currentSlide = 1;
+    const totalSlides = slides.length;
+    function renderSlide(index) {
+      if (index < 1 || index > totalSlides) return;
+      currentSlide = index;
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide - 1].render(currentSlide, totalSlides);
+      document.getElementById('currentIdx').textContent = String(currentSlide).padStart(2, '0');
+      document.getElementById('totalIdx').textContent = String(totalSlides).padStart(2, '0');
+      document.getElementById('progressBar').style.width = ((currentSlide / totalSlides) * 100) + '%';
+      document.getElementById('speakerContent').textContent = slides[currentSlide - 1].notes;
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(stage, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false });
+      }
+    }
+    function nextSlide() { if (currentSlide < totalSlides) renderSlide(currentSlide + 1); }
+    function prevSlide() { if (currentSlide > 1) renderSlide(currentSlide - 1); }
+    function toggleSpeakerNotes() { document.getElementById('speakerDrawer').classList.toggle('hidden'); }
+    function toggleFullScreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') { e.preventDefault(); nextSlide(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+      else if (e.key === 's' || e.key === 'S') { e.preventDefault(); toggleSpeakerNotes(); }
+      else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFullScreen(); }
+    });
+    window.addEventListener('DOMContentLoaded', () => { renderSlide(1); });
+  </script>
+</body>
+</html>

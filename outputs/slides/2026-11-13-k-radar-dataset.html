@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>K-Radar：4D 雷達張量全天候自駕基準資料集</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+
+  <!-- KaTeX for LaTeX Math Rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+
+  <style>
+    /* Glacial Tech Minimal Theme Styles */
+    :root {
+      --primary-blue: #2563EB;
+      --deep-navy: #0F172A;
+      --ice-blue-card: #F4F8FF;
+      --ice-blue-border: #DBEAFE;
+      --subtle-grid: #E2E8F0;
+    }
+
+    body {
+      background-color: #F8FAFC;
+      color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .slide-wrapper {
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .slide-canvas {
+      width: 100%;
+      max-width: 1200px;
+      aspect-ratio: 16 / 9;
+      background: #FFFFFF;
+      background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
+      background-size: 28px 28px;
+      border: 1px solid #E2E8F0;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      padding: 44px 56px;
+    }
+
+    .ice-card {
+      background-color: #F4F8FF;
+      border: 1px solid #DBEAFE;
+      border-radius: 14px;
+      padding: 18px 22px;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    /* Print Style for PDF Export (Ctrl+P) */
+    @media print {
+      body {
+        background: #FFFFFF !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .slide-wrapper {
+        padding: 0 !important;
+        min-height: auto !important;
+      }
+      .slide-canvas {
+        page-break-after: always;
+        break-after: page;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        max-width: 100% !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        aspect-ratio: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar & Progress -->
+  <div class="no-print fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-2.5 flex items-center justify-between shadow-xs">
+    <div class="flex items-center gap-3">
+      <span class="w-3 h-3 rounded-full bg-blue-600 animate-pulse"></span>
+      <span class="text-xs font-bold text-slate-800 tracking-wide uppercase mono">LLM WIKI · RESEARCH SLIDES</span>
+      <span class="text-slate-300">|</span>
+      <span class="text-xs text-slate-500 font-medium">K-Radar 4D 雷達張量全天候基準</span>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-1.5 text-xs text-slate-500">
+        <span>鍵盤</span>
+        <kbd class="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 mono text-[11px]">←</kbd>
+        <kbd class="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 mono text-[11px]">→</kbd>
+        <kbd class="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-50 mono text-[11px]">Space</kbd>
+        <span class="ml-1">翻頁</span>
+        <span class="mx-1.5 text-slate-300">·</span>
+        <button onclick="toggleNotes()" class="hover:text-blue-600 font-medium cursor-pointer">備忘稿 (S)</button>
+        <span class="mx-1.5 text-slate-300">·</span>
+        <button onclick="window.print()" class="hover:text-blue-600 font-medium cursor-pointer">列印 PDF</button>
+      </div>
+      <div id="slideCounter" class="text-xs font-bold text-blue-600 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 mono">
+        01 / 10
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Slide Canvas Container -->
+  <div class="slide-wrapper pt-16">
+    <div id="slideStage" class="slide-canvas">
+      <!-- Injected by JavaScript -->
+    </div>
+
+    <!-- Collapsible Speaker Notes Panel -->
+    <div id="speakerNotesPanel" class="no-print hidden max-w-[1200px] w-full mt-4 bg-white border border-blue-200 rounded-2xl p-5 shadow-sm transition-all">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-600 mono">Speaker Notes（講者口白備忘稿）</span>
+        </div>
+        <span class="text-xs text-slate-400">按 S 鍵可隨時展開或收合</span>
+      </div>
+      <p id="speakerNotesText" class="text-sm text-slate-700 leading-relaxed font-sans"></p>
+    </div>
+  </div>
+
+  <script>
+    const slides = [
+      // SLIDE 1: COVER
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <span class="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mono">DATASET BENCHMARK // NeurIPS 2022</span>
+            <span class="text-xs text-slate-400 mono">KAIST AVELab · [[2022-k-radar]] · [[2023-enhanced-k-radar]]</span>
+          </div>
+
+          <div class="my-auto py-2 space-y-4">
+            <div class="w-16 h-1.5 bg-blue-600 rounded-full"></div>
+            <h1 class="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+              K-Radar：4D 雷達張量<br/>
+              <span class="text-blue-600">全天候自駕基準資料集</span>
+            </h1>
+            <p class="text-base text-slate-600 max-w-3xl leading-relaxed">
+              4D Radar Tensor (4DRT) · 稀疏卷積基線 RTNH · 惡劣天候感測器倒掛評測 · 5% 最佳密度演進
+            </p>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+            <div class="ice-card py-3">
+              <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">張量維度</div>
+              <div class="text-sm font-bold text-slate-800 mt-1">都卜勒 · 距離 · 方位 · 俯仰</div>
+            </div>
+            <div class="ice-card py-3">
+              <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">資料規模</div>
+              <div class="text-sm font-bold text-slate-800 mt-1">35,000 幀 · 93,345 個 3D 框 · 7 種氣候</div>
+            </div>
+            <div class="ice-card py-3">
+              <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">核心實證</div>
+              <div class="text-sm font-bold text-blue-600 mt-1">高度維度不可或缺 · 暴雪超越光達</div>
+            </div>
+          </div>
+        `,
+        notes: "各位好，今天我要向大家報告的是自駕感知領域的旗艦級資料集——K-Radar。這是由韓國科學技術院（KAIST）發表於 NeurIPS 2022 的重要工作。它是全球首個保留完整「高度/俯仰角」與都卜勒連續能量分佈的 4D 雷達張量資料集，徹底解決了傳統雷達點雲被 CFAR 截斷、以及傳統雷達張量缺乏高度資訊的困境。"
+      },
+
+      // SLIDE 2: MOTIVATION
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">MOTIVATION & BACKGROUND</div>
+              <h2 class="text-xl font-bold text-slate-900">為什麼需要 K-Radar？光學感測器的天候困境與雷達盲點</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">02 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-6 space-y-3">
+              <div class="ice-card">
+                <div class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">光學感測器惡劣氣候失效</div>
+                <div class="space-y-2 text-xs text-slate-600 leading-relaxed">
+                  <p>• <strong>相機（RGB）</strong>：夜間照明受限，雨雪覆蓋鏡頭，缺乏直接深度測距能力。</p>
+                  <p>• <strong>光達（LiDAR）</strong>：波長較短（$850\\sim1550\\text{ nm}$），雷射在雨滴雪花中強烈散射；<strong>表面結霜覆雪時點雲密度急遽崩塌</strong>。</p>
+                </div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 leading-relaxed">
+                自駕系統在霧、雨、冰霰與暴雪中，亟需全天候長波長毫米波雷達（$77\\sim81\\text{ GHz}$）防護。
+              </div>
+            </div>
+
+            <div class="col-span-6 space-y-3">
+              <div class="p-4 rounded-xl bg-white border border-slate-200 space-y-2">
+                <div class="text-xs font-bold text-red-600 uppercase tracking-wide">既有雷達表徵的兩大深層盲點</div>
+                <ul class="text-xs text-slate-600 space-y-2.5 leading-relaxed pt-1">
+                  <li>
+                    <strong>1. 傳統點雲（RPC）被 CFAR 截斷</strong>：<br/>
+                    硬體韌體端門檻過早抹殺微弱回波，在 nuScenes 上光達 3D 偵測達 69.7% mAP，純雷達僅 4.9%。
+                  </li>
+                  <li>
+                    <strong>2. 既有張量資料集缺乏「高度維度」</strong>：<br/>
+                    先前張量資料集（如 RADIATE）僅提供 3DRT（都卜勒、距離、方位），<strong>缺乏垂直俯仰角</strong>，無法預測 3D 邊界框高度。
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>來源：[[2022-k-radar]] · [[k-radar-dataset]]</span>
+            <span class="mono">All-Weather Sensor Robustness</span>
+          </div>
+        `,
+        notes: "在自動駕駛中，光達在雨雪冰霜下很容易失效，因為表面一旦結霜覆雪，點雲密度就直接崩潰。雖然毫米波雷達能穿透惡劣天氣，但傳統雷達點雲在硬體端就被 CFAR 門檻濾掉太多微弱資訊；而之前的雷達張量資料集又只有 3D，少了垂直高度資訊，根本無法做真正的 3D 目標定位。這就是 K-Radar 出現的背景。"
+      },
+
+      // SLIDE 3: SENSOR SUITE & SPECS
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">HARDWARE & BENCHMARK SPECS</div>
+              <h2 class="text-xl font-bold text-slate-900">K-Radar 感測器配置與全天候資料規模</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">03 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-6 space-y-2.5">
+              <div class="ice-card">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-bold text-blue-700 mono">4D 毫米波成像雷達 · RETINA-4ST</span>
+                  <span class="text-[11px] px-2 py-0.5 rounded bg-blue-100 text-blue-800 mono">前保桿格柵安裝</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 leading-relaxed pt-1">
+                  <div>• 張量：<span class="mono font-semibold text-slate-800">64(D) × 256(R) × 107(A) × 37(E)</span></div>
+                  <div>• 探測：<span class="font-semibold text-slate-800">118m 最大距離 · 10 FPS</span></div>
+                  <div>• 視角：<span class="font-semibold text-slate-800">橫向 107° · 垂直 37°</span></div>
+                  <div>• 解析度：<span class="font-semibold text-slate-800">0.06m/s · 0.46m · 1° · 1°</span></div>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200">
+                <div class="text-xs font-bold text-slate-800 mb-1">輔助高精標註與視覺系統</div>
+                <div class="text-xs text-slate-600 space-y-1">
+                  <p>• <strong>雙光達系統</strong>：Ouster OS2-64（240m 遠距）+ OS1-128（120m 高解析）</p>
+                  <p>• <strong>8 視角立體相機</strong>：4 組 ZED2i 前/左/右/後立體鏡頭（$1280\\times720$ @ 30 FPS）</p>
+                  <p>• <strong>精確定位</strong>：RTK-GPS（誤差 $0.025\\text{ m} + 1\\text{ ppm}$）+ 雙 6 軸 IMU</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-span-6 space-y-2.5">
+              <div class="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
+                <div class="text-xs font-bold text-blue-900 uppercase tracking-wide">多樣環境與大規模 3D 標註</div>
+                <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                  <div class="p-2 rounded bg-white border border-blue-100"><span class="text-slate-400 block text-[10px]">總採集幀數</span><span class="font-bold text-slate-800 text-sm mono">35,000 幀 (58 序列)</span></div>
+                  <div class="p-2 rounded bg-white border border-blue-100"><span class="text-slate-400 block text-[10px]">3D 邊界框標註</span><span class="font-bold text-blue-600 text-sm mono">93,345 個 (含追蹤ID)</span></div>
+                  <div class="p-2 rounded bg-white border border-blue-100"><span class="text-slate-400 block text-[10px]">日夜分佈</span><span class="font-bold text-slate-800 text-xs">白天 21,820 / 夜間 13,174</span></div>
+                  <div class="p-2 rounded bg-white border border-blue-100"><span class="text-slate-400 block text-[10px]">物件類別</span><span class="font-bold text-slate-800 text-xs">轎車、大車、行人、單車、機車</span></div>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-600">
+                <strong class="text-slate-800">涵蓋 7 種真實駕駛天候</strong>：正常晴天、陰天、濃霧、雨天、霰（Sleet）、輕雪（$\\le 1\\text{ cm/hr}$）與大雪（$&gt; 1\\text{ cm/hr}$）。
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>規格來源：[[2022-k-radar]] · [[wiki/entities/k-radar-dataset]]</span>
+            <span class="mono">IP66+ Waterproof Rig</span>
+          </div>
+        `,
+        notes: "K-Radar 採集車配備了 IP66+ 防護等級的感測套件。核心是前保桿上的 RETINA-4ST 四維雷達，具有 64 個都卜勒頻段、256 個距離單元、107 度方位角與 37 度俯仰角。同時搭配了兩顆 64 線與 128 線光達、8 個立體相機鏡頭與 RTK-GPS，總共採集了 35,000 幀、跨越 7 種嚴苛天候，標註了超過 9.3 萬個 3D 物件框。"
+      },
+
+      // SLIDE 4: 4DRT PROCESSING PIPELINE
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">PRE-PROCESSING PIPELINE</div>
+              <h2 class="text-xl font-bold text-slate-900">4D 雷達張量處理流程（4DRT Pipeline）</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">04 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-12 grid grid-cols-3 gap-4">
+              <div class="ice-card space-y-2">
+                <span class="text-xs font-bold text-blue-700 mono">STEP 01 // 都卜勒均值</span>
+                <div class="text-sm font-bold text-slate-800">4DRT → 3DRT-RAE</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  沿都卜勒軸計算平均功率值，將 $64\\times256\\times107\\times37$ 原始能量矩陣壓縮至三維空間功率張量（$256\\times37\\times107$）。
+                </p>
+              </div>
+
+              <div class="ice-card space-y-2">
+                <span class="text-xs font-bold text-blue-700 mono">STEP 02 // 直角座標插值</span>
+                <div class="text-sm font-bold text-slate-800">3D Bilinear Interpolation</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  透過 3D 雙線性插值將極座標（距離-方位-俯仰）投影至笛卡爾直角空間網格 <code>3DRT-XYZ</code>，消除波束發散形變。
+                </p>
+              </div>
+
+              <div class="ice-card space-y-2">
+                <span class="text-xs font-bold text-blue-700 mono">STEP 03 // 空間稀疏化</span>
+                <div class="text-sm font-bold text-slate-800">Top-N% Power Pooling</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  在感興趣區域（RoI）內進行功率排序，保留最高能量點構成 3D 稀疏張量 $(X, Y, Z, \\text{PW})$，輸入稀疏神經網路。
+                </p>
+              </div>
+            </div>
+
+            <div class="col-span-12 p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+              <div class="text-xs text-slate-700">
+                <strong class="text-blue-700">BFS-2D 視覺化工具</strong>：在 BEV（鳥瞰圖）、FV（前視圖）、SV（側視圖）沿單軸求均值並以 Log 尺度繪製能量熱圖。
+              </div>
+              <span class="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-600 mono">標註精度 ≤ 0.7cm</span>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>張量管線：[[4d-radar-tensor]] · [[2022-k-radar]]</span>
+            <span class="mono">Continuous Spectrum Preservation</span>
+          </div>
+        `,
+        notes: "如何將高維度的雷達功率頻譜轉換成神經網路能吃的特徵？K-Radar 的處理管線分為三步：首先沿都卜勒維度取平均，得到距離、方位、俯仰的三維張量；接著進行 3D 雙線性插值，把極座標轉換為標準的直角座標網格；最後在感興趣區域內按功率排序進行稀疏化，保留能量最高的點形成稀疏張量。"
+      },
+
+      // SLIDE 5: RTNH BASELINE ARCHITECTURE
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">NEURAL ARCHITECTURE</div>
+              <h2 class="text-xl font-bold text-slate-900">RTNH 基線架構：3D 稀疏卷積特徵提取</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">05 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-6 space-y-3">
+              <div class="ice-card">
+                <div class="text-xs font-bold text-blue-700 mono mb-1">3D 稀疏卷積塊（3D-SCB）</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  • <strong>第 1 層</strong>：標準 3D 稀疏卷積（降採樣並擴展感受野）；<br/>
+                  • <strong>後續層</strong>：3D 子流形稀疏卷積（Submanifold Conv），嚴格維持幾何稀疏度，防止特徵向空白空間過度擴散。
+                </p>
+              </div>
+
+              <div class="ice-card">
+                <div class="text-xs font-bold text-slate-800 mono mb-1">多尺度轉置卷積串接</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  經 2D 轉置卷積（TransposeConv2D）將各層特徵上採樣對齊空間維度後串接，融合淺層空間細節與深層語意。
+                </p>
+              </div>
+            </div>
+
+            <div class="col-span-6 space-y-3">
+              <div class="p-4 rounded-xl bg-white border border-slate-200 space-y-2">
+                <div class="text-xs font-bold text-slate-800">錨框偵測頭（Anchor-based Detection Head）</div>
+                <div class="text-xs text-slate-600 leading-relaxed space-y-1">
+                  <p>• <strong>角度錨點</strong>：每個類別設定 $0^\\circ$ 與 $90^\\circ$ 兩個偏航錨點；</p>
+                  <p>• <strong>8 維回歸參數</strong>：$(x_c, y_c, z_c, x_l, y_l, z_l, \\cos(\\text{yaw}), \\sin(\\text{yaw}))$；</p>
+                  <p>• <strong>損失函數</strong>：Focal Loss（分類）+ Smooth $L_1$（回歸）。</p>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-blue-900">極致輕量化運算</div>
+                  <div class="text-xs text-slate-600">RTX 3090 單卡批次訓練 · 推論極速</div>
+                </div>
+                <span class="text-xs font-bold text-blue-700 mono bg-white px-2.5 py-1 rounded border border-blue-200">GPU RAM 421 MB</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>模型來源：[[2022-k-radar]] · [[k-radar-dataset]]</span>
+            <span class="mono">RTNH (Radar Tensor Network with Height)</span>
+          </div>
+        `,
+        notes: "為了評測 4D 雷達張量，作者提出了 RTNH 基線網路。它借鑑了 3D 稀疏卷積的思想，第一層先做降採樣，後續用子流形稀疏卷積維持稀疏度，然後透過轉置卷積將多尺度特徵上採樣串接，最後接上 Anchor 偵測頭輸出 8 維空間方位與尺寸。這套架構運算極其輕量，為後續研究立下了標準 Baseline。"
+      },
+
+      // SLIDE 6: ELEVATION IMPORTANCE
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">KEY FINDING 1 · ELEVATION VALUE</div>
+              <h2 class="text-xl font-bold text-slate-900">實驗實證 1：高度維度對 3D 目標定位的決定性影響</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">06 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-12 p-4 rounded-xl bg-white border border-slate-200">
+              <div class="text-xs font-bold text-slate-800 mb-3">K-Radar 測試集消融對比（Sedan IoU &gt; 0.3）</div>
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-blue-50 text-blue-900">
+                    <th class="py-2.5 px-3 font-semibold">模型變體</th>
+                    <th class="py-2.5 px-3 font-semibold">特徵骨幹</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">3D AP (%)</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">BEV AP (%)</th>
+                    <th class="py-2.5 px-3 font-semibold text-right">GPU 記憶體</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 mono">
+                  <tr class="text-slate-600">
+                    <td class="py-2.5 px-3 font-sans">RTN (無高度)</td>
+                    <td class="px-3 font-sans">2D-DCB (ResNet-50)</td>
+                    <td class="px-3 text-right">39.86</td>
+                    <td class="px-3 text-right">49.37</td>
+                    <td class="px-3 text-right">257 MB</td>
+                  </tr>
+                  <tr class="text-slate-600">
+                    <td class="py-2.5 px-3 font-sans">RTN (無高度)</td>
+                    <td class="px-3 font-sans">2D-DCB (ResNeXt-101)</td>
+                    <td class="px-3 text-right">40.12</td>
+                    <td class="px-3 text-right">50.67</td>
+                    <td class="px-3 text-right">520 MB</td>
+                  </tr>
+                  <tr class="bg-blue-600/10 text-blue-900 font-bold">
+                    <td class="py-2.5 px-3 font-sans">RTNH (含高度 Elevation)</td>
+                    <td class="px-3 font-sans">3D-SCB (3D Sparse Conv)</td>
+                    <td class="px-3 text-right text-blue-700">47.44 (+7.32%)</td>
+                    <td class="px-3 text-right text-blue-700">58.39 (+7.72%)</td>
+                    <td class="px-3 text-right text-blue-700">421 MB</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="col-span-12 grid grid-cols-2 gap-4">
+              <div class="ice-card">
+                <div class="text-xs font-bold text-blue-800">顯著精度躍升（+7.32% 3D AP）</div>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                  俯仰角資訊提供了車頂、底盤與路面的直接三維空間分離能力，徹底避免了 2D 投影導致的高度歧義。
+                </p>
+              </div>
+
+              <div class="ice-card">
+                <div class="text-xs font-bold text-blue-800">運算效率與記憶體反超</div>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                  3D 稀疏卷積僅在非零能量網格運算，相比 2D ResNeXt-101 稠密矩陣節省了近 100 MB 記憶體。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>數據來源：[[2022-k-radar]] Table 3 & Table 9</span>
+            <span class="mono">3D Sparse Conv Supremacy</span>
+          </div>
+        `,
+        notes: "第一項重大結論是：雷達的「高度維度」到底有沒有用？數據給出了明確答案。保留高度維度的 RTNH 在 3D AP 上達到 47.44%，比拿掉高度維度的 2D 卷積整整高出了 7.32%，而且由於稀疏卷積只在有能量的體素上計算，GPU 記憶體反而從 520 MB 降到了 421 MB。這證實了 4D 成像雷達的高度資訊對 3D 空間感知是不可或缺的。"
+      },
+
+      // SLIDE 7: SENSOR INVERSION IN ADVERSE WEATHER
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">KEY FINDING 2 · WEATHER ROBUSTNESS</div>
+              <h2 class="text-xl font-bold text-slate-900">實驗實證 2：惡劣天候下的感測器優勢倒掛</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">07 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-12 p-4 rounded-xl bg-white border border-slate-200">
+              <div class="text-xs font-bold text-slate-800 mb-2">4D 雷達 RTNH vs. 光達 PointPillars 天候對決（Sedan 3D AP %）</div>
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="bg-blue-50 text-blue-900">
+                    <th class="py-2 px-3 font-semibold">天候場景</th>
+                    <th class="py-2 px-3 font-semibold text-right">4D 雷達 RTNH</th>
+                    <th class="py-2 px-3 font-semibold text-right">光達 PointPillars</th>
+                    <th class="py-2 px-3 font-semibold text-right">感測器對比趨勢</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 mono text-xs">
+                  <tr class="text-slate-600"><td class="py-2 px-3 font-sans">正常晴天 (Normal)</td><td class="px-3 text-right">49.9</td><td class="px-3 text-right font-bold text-slate-800">52.3</td><td class="px-3 text-right font-sans text-slate-500">LiDAR 高解析度微幅領先</td></tr>
+                  <tr class="text-slate-600"><td class="py-2 px-3 font-sans">濃霧 (Fog)</td><td class="px-3 text-right font-bold text-blue-600">52.8</td><td class="px-3 text-right text-red-600">42.2</td><td class="px-3 text-right font-sans text-blue-600">LiDAR 衰減，雷達超越</td></tr>
+                  <tr class="bg-blue-50/50 text-slate-800 font-semibold"><td class="py-2 px-3 font-sans">冰霰 (Sleet)</td><td class="px-3 text-right font-bold text-blue-600">41.5</td><td class="px-3 text-right font-bold text-red-600">22.7 (-29.6%)</td><td class="px-3 text-right font-sans text-blue-700">LiDAR 暴跌，雷達領先近 1 倍</td></tr>
+                  <tr class="bg-blue-50/50 text-slate-800 font-semibold"><td class="py-2 px-3 font-sans">大雪 (Heavy Snow)</td><td class="px-3 text-right font-bold text-blue-600">44.5</td><td class="px-3 text-right font-bold text-red-600">29.7 (-22.6%)</td><td class="px-3 text-right font-sans text-blue-700">LiDAR 覆雪失效，雷達超出一倍半</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="col-span-12 p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+              <div class="text-xs text-amber-900 leading-relaxed">
+                <strong>物理洞察</strong>：LiDAR 鏡面在冰雪下結霜覆雪，點雲密度毀滅性崩塌；毫米波雷達具備穿透毫米級冰雪顆粒之長波長物理優勢，在暴雪中維持穩定性。
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>數據來源：[[2022-k-radar]] Table 4</span>
+            <span class="mono">Sensor Inversion Phenomenon</span>
+          </div>
+        `,
+        notes: "第二個關鍵結論是惡劣天氣下的「感測器優勢倒掛」。晴天時光達解析度高，確實微幅領先；但到了濃霧、大雪與冰霰天氣，光達表面結霜、雷射被雪花散射，3D AP 從 52% 暴跌到 22%~29%；相反地，4D 雷達完全不受表面結霜影響，在冰霰和大雪中仍能穩定輸出 41%~44% 的準確率，領先光達近一倍，證明了雷達是極端環境下的安全防線。"
+      },
+
+      // SLIDE 8: ENHANCED K-RADAR & DENSITY ABLATION
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">PARADIGM SHIFT · ENHANCED K-RADAR</div>
+              <h2 class="text-xl font-bold text-slate-900">演進突破：4DSRT 離線預算與 5% 最佳密度</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">08 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-6 space-y-3">
+              <div class="ice-card">
+                <div class="text-xs font-bold text-blue-700 mono mb-1">離線 4D 稀疏張量（4DSRT）</div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  將都卜勒降維、空間插值與能量池化一次性離線預算，直接生成 4DSRT $(X, Y, Z, \\text{PW})$：<br/>
+                  <span class="block mt-2 font-bold text-blue-700 text-sm mono">訓練速度提升 17.1 倍 (0.47 → 8.04 iter/s)</span>
+                </p>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-600 leading-relaxed">
+                原版 12 TB 體積巨浪被壓縮至可上傳雲端儲存的稀疏檔案，大幅降低社群研發門檻。
+              </div>
+            </div>
+
+            <div class="col-span-6 space-y-3">
+              <div class="p-4 rounded-xl bg-white border border-slate-200">
+                <div class="text-xs font-bold text-slate-800 mb-2">密度消融實證：5% 密度最優（推翻 10% 基準）</div>
+                <div class="space-y-1.5 text-xs text-slate-600">
+                  <div class="flex justify-between py-1 border-b border-slate-100"><span>1% 密度</span><span class="mono">43.0% 3D AP · 245 MB</span></div>
+                  <div class="flex justify-between py-1 border-b border-slate-100 bg-blue-50 font-bold text-blue-900 px-2 rounded"><span>5% 密度（最佳推薦）</span><span class="mono text-blue-700">47.9% 3D AP · 380 MB</span></div>
+                  <div class="flex justify-between py-1 border-b border-slate-100"><span>10% 密度（K-Radar 原版）</span><span class="mono">47.4% 3D AP · 421 MB</span></div>
+                  <div class="flex justify-between py-1 text-red-600"><span>50% 密度（過度稠密）</span><span class="mono">46.1% 3D AP · 802 MB (冰霰跌至 22.2%)</span></div>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                <strong>關鍵觀點修正</strong>：雷達張量並非越稠密越好！過高密度保留地面積雪雜訊，反噬偵測精度。
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>演進來源：[[2023-enhanced-k-radar]] · [[4d-radar-tensor]]</span>
+            <span class="mono">Optimal 5% Density Standard</span>
+          </div>
+        `,
+        notes: "原版 K-Radar 雖然突破，但 12 TB 體積和線上重複運算讓訓練非常緩慢。KAIST 在 2023 年發表了 Enhanced K-Radar，改用離線預處理的 4DSRT，訓練速度直接飆升 17 倍。更重要的是，作者進行了系統性密度測試，推翻了「雷達點越多越好」的直覺：保留 5% 能量點時效果最好（47.9% 3D AP）；如果硬留 50%，在結冰路面反而會保留大量積冰反射雜訊，導致冰霰天氣準確率暴跌 17%！"
+      },
+
+      // SLIDE 9: RESEARCH GAPS
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">FRONTIER CHALLENGES</div>
+              <h2 class="text-xl font-bold text-slate-900">基於 K-Radar 的現存研究缺口與前沿挑戰</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">09 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 my-auto">
+            <div class="ice-card flex flex-col justify-between space-y-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold mono">CHALLENGE 01</span>
+                <div class="text-sm font-bold text-slate-800 mt-2">4DRT 自動標註流水線</div>
+                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  目前 9.3 萬個框全靠人工標註；如何藉由晴天預訓練 LiDAR 偵測器自動生成 4DRT 弱標籤擴展資料集仍為關鍵缺口。
+                </p>
+              </div>
+              <div class="text-[11px] text-blue-600 font-semibold border-t border-blue-200/60 pt-2">
+                [Wiki 尚無此部分資料]
+              </div>
+            </div>
+
+            <div class="ice-card flex flex-col justify-between space-y-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold mono">CHALLENGE 02</span>
+                <div class="text-sm font-bold text-slate-800 mt-2">跨感測器領域轉移</div>
+                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  K-Radar 與 RADIATE 等雷達存在波長、天線增益與解析度差異，跨雷達資料集預訓練幾乎無法直接遷移。
+                </p>
+              </div>
+              <div class="text-[11px] text-blue-600 font-semibold border-t border-blue-200/60 pt-2">
+                [Wiki 尚無此部分資料]
+              </div>
+            </div>
+
+            <div class="ice-card flex flex-col justify-between space-y-3">
+              <div>
+                <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold mono">CHALLENGE 03</span>
+                <div class="text-sm font-bold text-slate-800 mt-2">頻譜-影像跨維度融合</div>
+                <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  既有工作多為雷達-光達融合（L4DR）；直接將 4DRT 原始頻譜與 2D 相機影像進行跨維度融合的架構尚未收錄。
+                </p>
+              </div>
+              <div class="text-[11px] text-blue-600 font-semibold border-t border-blue-200/60 pt-2">
+                [Wiki 尚無此部分資料]
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>誠實標記知識缺口 · 指引研究前瞻方向</span>
+            <span class="mono">Open Research Frontiers</span>
+          </div>
+        `,
+        notes: "從現有知識庫來看，K-Radar 還留有三個重要的研究缺口：第一，目前 9.3 萬個框全靠人工標註，如何利用光達網路自動標註雷達張量是擴展資料庫的關鍵；第二，不同廠商的雷達頻率和天線增益完全不同，K-Radar 上訓練好的模型很難直接搬到其他雷達上；第三，如何跳過光達，直接把原始雷達頻譜和相機影像進行跨維度融合，也是當前的前沿熱點。"
+      },
+
+      // SLIDE 10: CONCLUSION & SUGGESTED LITERATURE
+      {
+        render: () => `
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <div class="text-xs font-semibold text-blue-600 mono">CONCLUSION & OUTLOOK</div>
+              <h2 class="text-xl font-bold text-slate-900">總結與建議參考文獻（可點擊下載 · 待 Wiki 化）</h2>
+            </div>
+            <span class="text-xs text-slate-400 mono">10 / 10</span>
+          </div>
+
+          <div class="grid grid-cols-12 gap-5 my-auto">
+            <div class="col-span-5 space-y-2.5">
+              <div class="ice-card space-y-1.5">
+                <div class="text-xs font-bold text-blue-800">三大核心里程碑</div>
+                <ul class="text-xs text-slate-600 space-y-2 leading-relaxed">
+                  <li>• <strong>首創 4D 張量基準</strong>：開創全天候自駕感知新範式。</li>
+                  <li>• <strong>實證高度價值</strong>：提升 7.32% 3D AP 並節省記憶體。</li>
+                  <li>• <strong>天候倒掛優勢</strong>：在暴雪冰霰中達成光達近 2 倍精度。</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="col-span-7 space-y-2.5">
+              <div class="text-xs font-bold text-slate-800 uppercase tracking-wide">建議下載並納入 Wiki 之最新前沿文獻</div>
+              
+              <div class="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-800">Auto-Labeling 4D Radar Tensors (IEEE IVS 2024)</div>
+                  <div class="text-[11px] text-slate-500">基於光達偵測器之 K-Radar 自動標註流水線 (arXiv:2407.04709)</div>
+                </div>
+                <a href="https://arxiv.org/pdf/2407.04709.pdf" target="_blank" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold mono hover:bg-blue-700">下載 PDF</a>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-800">Multi-Teacher KD on K-Radar (2025)</div>
+                  <div class="text-[11px] text-slate-500">多教師跨模態知識蒸餾突破 RTNH 稀疏瓶頸 (arXiv:2502.06114)</div>
+                </div>
+                <a href="https://arxiv.org/pdf/2502.06114.pdf" target="_blank" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold mono hover:bg-blue-700">下載 PDF</a>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-800">RadarXFormer (2026)</div>
+                  <div class="text-[11px] text-slate-500">4D 雷達原始光譜與相機跨維度融合 (arXiv:2603.14822)</div>
+                </div>
+                <a href="https://arxiv.org/pdf/2603.14822.pdf" target="_blank" class="px-2.5 py-1 rounded bg-blue-600 text-white text-[11px] font-semibold mono hover:bg-blue-700">下載 PDF</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex justify-between text-xs text-slate-400 border-t border-slate-100 pt-2.5">
+            <span>報告完畢 · 歡迎交流討論</span>
+            <span class="mono">Q&A · Thank You</span>
+          </div>
+        `,
+        notes: "總結來說，K-Radar 為整個 4D 毫米波雷達研究樹立了里程碑。它證明了高度資訊的不可或缺、展現了極端天氣下的強健性，並透過 4DSRT 給出了 5% 能量密度的最佳實務。針對剛才提到的缺口，我也整理了三篇專門基於 K-Radar 的最新文獻，都附上了直接下載 PDF 的連結，後續我們可以把它們收進知識庫中繼續探索。謝謝大家！"
+      }
+    ];
+
+    let currentSlide = 0;
+    let showNotes = false;
+
+    function renderSlide() {
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide].render();
+      document.getElementById('slideCounter').textContent = `${String(currentSlide + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+      document.getElementById('speakerNotesText').textContent = slides[currentSlide].notes;
+
+      // Re-trigger KaTeX rendering for dynamic content
+      if (window.renderMathInElement) {
+        renderMathInElement(stage, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        renderSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        renderSlide();
+      }
+    }
+
+    function toggleNotes() {
+      showNotes = !showNotes;
+      const panel = document.getElementById('speakerNotesPanel');
+      panel.classList.toggle('hidden', !showNotes);
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        toggleNotes();
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
+      }
+    });
+
+    // Initial render
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSlide();
+    });
+  </script>
+</body>
+</html>

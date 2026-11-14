@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大型車遠距衰退、失敗診斷與四大競爭假說 — 碩士論文專題簡報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; color: #0F172A; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .tech-bg { background-color: #FFFFFF; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; }
+    .ice-card { background: #F4F8FF; border: 1px solid #DBEAFE; border-radius: 12px; padding: 18px; }
+    .ice-card-blue { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 18px; }
+    .ice-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; }
+    .ice-badge-alert { border: 1px solid #FED7AA; background: #FFF7ED; color: #C2410C; }
+    .slide-canvas { aspect-ratio: 16 / 9; min-height: 560px; max-height: 680px; }
+    @media print { body { background: #FFFFFF !important; } .no-print { display: none !important; } .slide-canvas { aspect-ratio: auto !important; height: 100vh !important; page-break-after: always !important; box-shadow: none !important; border: none !important; } }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 md:p-6 tech-bg">
+
+  <header class="w-full max-w-6xl flex items-center justify-between py-2 border-b border-slate-200 no-print text-xs text-slate-500">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-blue-600 tracking-wider">NYCU CIVIL ENGINEERING</span>
+      <span class="text-slate-300">|</span>
+      <span>碩士論文專題簡報 04：大型車衰退與四大假說</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">研究生：張喬筑</span>
+      <span class="text-slate-400">指導教授：莊子毅 博士</span>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl flex-grow flex items-center justify-center my-4">
+    <div id="slideStage" class="w-full slide-canvas bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-300"></div>
+  </main>
+
+  <div id="speakerDrawer" class="w-full max-w-6xl bg-white border border-blue-200 rounded-xl p-4 shadow-lg mb-4 hidden no-print transition-all">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider mono">SPEAKER NOTES // 講者口白備忘錄 (按 S 鍵關閉)</span>
+      </div>
+      <span class="text-[11px] text-slate-400">專題 04</span>
+    </div>
+    <div id="speakerContent" class="text-xs text-slate-700 leading-relaxed max-h-32 overflow-y-auto"></div>
+  </div>
+
+  <footer class="w-full max-w-6xl flex items-center justify-between py-2 border-t border-slate-200 no-print text-xs text-slate-600">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1">
+        <button onclick="prevSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="上一頁 (←)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+        <button onclick="nextSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="下一頁 (→)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="mono font-semibold text-slate-800">
+        PAGE <span id="currentIdx" class="text-blue-600">01</span> / <span id="totalIdx">08</span>
+      </div>
+      <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 12.5%;"></div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 text-slate-500">
+      <button onclick="toggleSpeakerNotes()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">S</span><span>備忘錄</span></button>
+      <button onclick="toggleFullScreen()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">F</span><span>全螢幕</span></button>
+      <button onclick="window.print()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span>列印 PDF</span></button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = [
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">TOPIC 04 // LARGE-VEHICLE DIAGNOSTICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-4">
+            <span class="ice-badge ice-badge-alert">碩士論文專題報告 04</span>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+              大型車遠距衰退、失敗診斷與四大競爭假說<br>
+              <span class="text-blue-600">21.9:1 長尾失衡、功率衰退與 RTNH 檢驗方案</span>
+            </h1>
+            <p class="text-sm text-slate-600 max-w-3xl leading-relaxed">
+              深入剖析功率抑制中「轎車受益但大型車退步」的核心矛盾；以 21.9:1 樣本失衡與 60–80m 遠距缺乏光達支持點功率跌落至 82.68% 為診斷依據，系統化構建涵蓋數據、遮蔽、映射與偵測器的四大競爭假說。
+            </p>
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">類別長尾比例</div>
+                <div class="text-sm font-bold text-rose-600 mt-1">21.9 : 1 (5690 vs 260)</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">遠距功率衰退</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">60–80m 跌至 82.68%</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">歷史先導警訊</div>
+                <div class="text-sm font-bold text-blue-600 mt-1">轎車 +8.76% ｜ 大車 -4.40%</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>國立陽明交通大學 土木工程學系碩士班</span>
+            <span class="mono">Failure Analysis & Hypotheses</span>
+          </div>
+        `,
+        notes: `各位老師好，本專題直擊本論文最嚴肅的核心挑戰——「大型車遠距衰退、失敗診斷與四大競爭假說」。我們將客觀剖析為什麼去噪會讓大型車退步，並以真實數據揭露樣本失衡與遠距功率衰退的病理。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">01 // DATA IMBALANCE</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">資料分佈 // 長尾失衡</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">訓練資料分佈：轎車與大車 21.9:1 的懸殊差距 (圖 4-3)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">OBJECT-FRAME COUNTS</span>
+                <h3 class="text-sm font-bold text-slate-800">訓練物件幀數量對比</h3>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 text-xs text-slate-700 space-y-2">
+                  <div class="flex justify-between"><span>轎車物件幀 (Sedan)：</span><strong class="mono text-blue-700">5,690 幀</strong></div>
+                  <div class="flex justify-between"><span>大型車物件幀 (Bus/Truck)：</span><strong class="mono text-rose-600">260 幀</strong></div>
+                  <div class="pt-1 border-t border-slate-100 flex justify-between font-bold"><span>數量失衡比：</span><span class="mono text-rose-700">21.9 : 1</span></div>
+                </div>
+                <div class="text-[11px] text-slate-500">大車僅出現在場景 1 (140) 與場景 2 (120)；場景 5 與 6 完全為零。</div>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-amber-600 mono">DISTRIBUTION SHIFT</span>
+                <h3 class="text-sm font-bold text-slate-800">開發環境分佈偏移</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>開發場景 3 包含高達 <strong>1,254 個大型車物件幀</strong>。</li>
+                  <li>訓練集的大車經驗極少，評估集卻有龐大比例的大車，造成嚴重的領域分佈偏移。</li>
+                  <li>同車跨幀重複計數，獨立大車實體數量更少。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+              結論：神經網路在訓練期極少接觸大車長車身與遠距散射幾何，這是先天的數據劣勢。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5.1 節 · 圖 4-3 資料分佈</span>
+            <span class="mono">Severe Long-Tailed Distribution</span>
+          </div>
+        `,
+        notes: `訓練集裡轎車和大車的比例高達 21.9 比 1，大車只有少得可憐的 260 幀，而且只集中在兩個場景。神經網路在訓練期極少接觸大車幾何，這是先天的數據劣勢。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">02 // DISTANCE DEGRADATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">物理衰退 // 表 4-4</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">大型車功率保留率階梯衰退：60–80m 跌至 82.68%</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr><th class="p-2.5">水平距離區間</th><th class="p-2.5 text-emerald-600">有 LiDAR 支持 (%)</th><th class="p-2.5 text-rose-600">無 LiDAR 支持 (%)</th><th class="p-2.5">差值 (百分點)</th><th class="p-2.5">物理診斷</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr><td class="p-2 mono">0–20 m</td><td class="p-2 mono">97.14%</td><td class="p-2 mono">95.56%</td><td class="p-2 mono">-1.58</td><td class="p-2 text-slate-500">近距回波強，保留健全</td></tr>
+                  <tr><td class="p-2 mono">20–40 m</td><td class="p-2 mono">95.26%</td><td class="p-2 mono">91.33%</td><td class="p-2 mono">-3.93</td><td class="p-2 text-slate-500">無光達支持點輕微衰減</td></tr>
+                  <tr><td class="p-2 mono">40–60 m</td><td class="p-2 mono">92.16%</td><td class="p-2 mono">87.27%</td><td class="p-2 mono">-4.89</td><td class="p-2 text-slate-500">衰減幅度擴大</td></tr>
+                  <tr class="bg-rose-50/60 font-bold"><td class="p-2 mono text-rose-700">60–80 m</td><td class="p-2 mono text-blue-700">90.47%</td><td class="p-2 mono text-rose-700 font-extrabold">82.68%</td><td class="p-2 mono text-rose-700 font-extrabold">-7.79</td><td class="p-2 text-rose-800">嚴重衰減，弱回波遭誤殺</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-900 leading-relaxed">
+              <strong>關鍵實證結論</strong>：表 4-4 揭露了最殘酷的物理病理——在 60 到 80 公尺處，沒有光達支持的大車點功率保留率暴跌到 82.68%。這證明模型在遠距離將大車的有效弱回波過度抑制了！
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5.2 節 · 表 4-4 功率保留</span>
+            <span class="mono">Steep Distance Power Decay</span>
+          </div>
+        `,
+        notes: `表 4-4 給出了關鍵的物理病理報告。在 20 米內，大車保留率都在 95% 以上；但到了 60 到 80 米，沒有光達支持的大車點，功率保留率暴跌到 82.68%。這證明模型在遠距離將大車的有效弱回波過度抑制了。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // PILOT WARNING</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">先導警訊 // 表 4-5</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">歷史 RTNH 先導結果：轎車暴增 vs. 大車退步</h2>
+            </div>
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                  <tr><th class="p-2.5">評估維度</th><th class="p-2.5">目標類別</th><th class="p-2.5">原始功率 AP11 (%)</th><th class="p-2.5">軟式 w0.55 AP11 (%)</th><th class="p-2.5">真實差值</th><th class="p-2.5">深層解讀</th></tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                  <tr class="bg-emerald-50/50">
+                    <td class="p-2.5 font-bold">BEV (俯視)</td>
+                    <td class="p-2.5 font-semibold text-blue-700">轎車 (Sedan)</td>
+                    <td class="p-2.5 mono">4.85</td>
+                    <td class="p-2.5 mono font-bold text-emerald-600">13.62</td>
+                    <td class="p-2.5 mono font-bold text-emerald-600">+8.76</td>
+                    <td class="p-2.5 text-slate-600">噪聲壓低，邊界清晰</td>
+                  </tr>
+                  <tr class="bg-rose-50/50">
+                    <td class="p-2.5 font-bold">BEV (俯視)</td>
+                    <td class="p-2.5 font-semibold text-rose-700">巴士/卡車 (Truck)</td>
+                    <td class="p-2.5 mono">17.62</td>
+                    <td class="p-2.5 mono text-rose-600">13.23</td>
+                    <td class="p-2.5 mono font-bold text-rose-600">-4.40</td>
+                    <td class="p-2.5 text-rose-800 font-medium">長車身回波受損</td>
+                  </tr>
+                  <tr class="bg-slate-50 font-semibold">
+                    <td class="p-2.5">BEV (俯視)</td>
+                    <td class="p-2.5">兩類等權平均</td>
+                    <td class="p-2.5 mono">11.24</td>
+                    <td class="p-2.5 mono">13.42</td>
+                    <td class="p-2.5 mono text-blue-600">+2.18</td>
+                    <td class="p-2.5 text-slate-500">平均值掩蓋了大車退步</td>
+                  </tr>
+                  <tr>
+                    <td class="p-2.5 font-bold">3D (三維)</td>
+                    <td class="p-2.5">兩類等權平均</td>
+                    <td class="p-2.5 mono">5.95</td>
+                    <td class="p-2.5 mono">5.73</td>
+                    <td class="p-2.5 mono text-rose-600">-0.22</td>
+                    <td class="p-2.5 text-slate-600">高度定位並未同步改善</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-900">
+              嚴格戒律：絕不能表述為「三維偵測提升 2%」！必須誠實直面大車受損與 3D 改善脫節的事實。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.6 節 · 表 4-5 與圖 4-4</span>
+            <span class="mono">Historic RTNH Pilot Findings</span>
+          </div>
+        `,
+        notes: `這份歷史先導結果揭示了殘酷的現實：去噪讓轎車俯視 AP 增加了 8.76%，但大車卻倒退了 4.4%。如果只看兩類平均加總的 +2.18%，論文就會做出嚴重失真的宣稱。而且三維 3D AP 甚至微幅下降，證明俯視提升未轉化為 3D 定位。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // HYPOTHESIS 1 & 2</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">競爭假說 // 數據與教師</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">假說 1 與 2：樣本幾何稀缺 vs. 光達視野偏向</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">HYPOTHESIS 01 // 樣本與幾何稀缺</span>
+                <h3 class="text-sm font-bold text-slate-800">訓練大車樣本嚴重不足 (21.9:1)</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  訓練集僅 260 個大車幀。依據 <code>EQL v1/v2 (CVPR 2020/2021)</code> 長尾理論，5,690 個轎車負樣本在反向傳播中產生壓倒性的負梯度，導致大車分類神經元的權重範數（Weight Norm）被嚴重壓抑，引發長尾梯度窒息。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-amber-600 mono">HYPOTHESIS 02 // 光達視野遮蔽偏向</span>
+                <h3 class="text-sm font-bold text-slate-800">大車盲區落入不確定區缺乏監督</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  光達僅照亮車尾或靠自車的單一側面，其餘大量車體回波落入「未判定不確定區」。基準模型選擇忽略不確定點，導致大車車體大部分回波缺乏積極監督，被網路保守低估。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700">
+              分析：假說 1 指向資料集結構缺陷，假說 2 指向跨模態視角不一致性。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5.3 節 · 假說 1 與 2</span>
+            <span class="mono">Scarcity vs. Occlusion Bias</span>
+          </div>
+        `,
+        notes: `為什麼大車會退步？我們首先提出兩個假說：第一是大車樣本太少，第二是光達存在視角遮蔽，使大車車體大部分落入缺乏監督的不確定區，導致網路推論保守。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // HYPOTHESIS 3 & 4</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">競爭假說 // 映射與偵測器</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">假說 3 與 4：功率過度削弱 vs. RTNH 結構錯配</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-rose-600 mono">HYPOTHESIS 03 // 功率映射削弱弱回波</span>
+                <h3 class="text-sm font-bold text-slate-800">連續抑制壓低了關鍵弱訊號</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  大車長車身處的雷達回波原本就較為微弱。連續軟式抑制直接將功率乘以小於 1 的倍率，即使保留 65% 也可能破壞了偵測器仰賴的關鍵微弱訊號，導致體素特徵幅度跌破激活閾值。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-slate-700 mono">HYPOTHESIS 04 // 偵測器結構不適配</span>
+                <h3 class="text-sm font-bold text-slate-800">RTNH 體素與巨大錨框錯配</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  依據 <code>Li & Kong (IEEE TVT 2023)</code> 體素分析，9.5m 大車在 0.4m 體素下覆蓋 20+ 體素。微弱點雲功率遭軟抑制削弱後，多個體素同步跌破 RTNH 空間激活門檻，導致大車特徵嚴重斷裂與漏檢。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700">
+              分析：假說 3 指向功率映射曲線，假說 4 指向下游偵測器的結構敏感度。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5.3 節 · 假說 3 與 4</span>
+            <span class="mono">Attenuation vs. Structural Mismatch</span>
+          </div>
+        `,
+        notes: `第三個假說是連續軟式加權壓低了原本就微弱的訊號；第四個假說是 RTNH 自身巨大的大車錨框對點雲稀疏度過於敏感。這四個假說涵蓋了數據、教師、映射與下游偵測器。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // DIAGNOSTIC METHOD</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">診斷方案 // 嚴格比對</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">逐物件漏檢配對檢驗方案：拒絕武斷歸因</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-6 ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">MATCHED PAIR AUDITING</span>
+                <div class="text-xs font-bold text-slate-800">配對統計兩大案例群組</div>
+                <div class="space-y-2 text-xs">
+                  <div class="p-2.5 rounded bg-rose-50 border border-rose-200">
+                    <strong class="text-rose-700">案例 A // 漏檢群組</strong>：原本原始功率偵測成功，經功率修改後轉為漏檢的物件。
+                  </div>
+                  <div class="p-2.5 rounded bg-emerald-50 border border-emerald-200">
+                    <strong class="text-emerald-700">案例 B // 恢復群組</strong>：原本原始功率漏檢，經功率修改後恢復偵測的物件。
+                  </div>
+                </div>
+              </div>
+              <div class="col-span-6 space-y-2 text-xs text-slate-700">
+                <div class="p-3 bg-white rounded-xl border border-slate-200 space-y-1.5">
+                  <div class="font-bold text-slate-900">精確測量五大維度：</div>
+                  <div>1. 3D 中心位置偏差 $(\Delta x, \Delta y, \Delta z)$</div>
+                  <div>2. 長寬高尺寸估計偏差 $(\Delta L, \Delta W, \Delta H)$</div>
+                  <div>3. 偏航角方向偏差 $\Delta \theta_{\text{yaw}}$</div>
+                  <div>4. 分類信心分數與 3D IoU</div>
+                  <div>5. 依車型、距離分段與光達支持狀態分組</div>
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500">
+              承諾：未完成此逐物件精確量測前，本文不將大車退步簡單歸因於單一原因。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5.3 節 · 逐物件診斷設計</span>
+            <span class="mono">Object-Level Matched Pair Protocol</span>
+          </div>
+        `,
+        notes: `我們在論文中堅決反對武斷歸因。我們規劃了嚴密的逐物件漏檢配對診斷：詳細統計哪輛車因為去噪被漏檢、哪輛車被找回來，精確測量中心偏差與長寬高尺寸，用真憑實據檢驗這四大假說。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // SUMMARY</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">專題總結 // 解決藍圖</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">大型車診斷總結與 Version08 對策</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4 text-xs">
+              <div class="ice-card-blue space-y-2">
+                <span class="font-bold text-blue-700 mono">SOLUTION 01</span>
+                <div class="font-bold text-slate-800">平台式功率映射</div>
+                <p class="text-slate-600 leading-relaxed">
+                  保證可信車體點 100% 滿額保留，徹底消除軟式抑制造成的能量折損。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-blue-700 mono">SOLUTION 02</span>
+                <div class="font-bold text-slate-800">EQL v2 梯度均衡 + 3D-DIoU</div>
+                <p class="text-slate-600 leading-relaxed">
+                  引入 <code>EQL v2 (CVPR 2021)</code> 屏蔽多數負梯度，搭配 <code>3D-DIoU (AAAI 2020)</code> 鎖定中心高度。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-blue-700 mono">SOLUTION 03</span>
+                <div class="font-bold text-slate-800">場景 9 資料擴充</div>
+                <p class="text-slate-600 leading-relaxed">
+                  備妥場景 9（833 幀稀疏點雲），為模型補充更多大車與遠距幾何。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 text-center font-semibold">
+              下一專題：研究限制、演算法改良與定稿最小證據鏈 →
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.5 節與第 5.3 節總結</span>
+            <span class="mono">Diagnostic Summary & Solutions</span>
+          </div>
+        `,
+        notes: `總結本專題：我們確立了大型車退步的真實數據病理，並在 Version08 準備了平台式映射、類別加權與資料擴充三大對策。最後一個專題我們將討論論文限制與定稿最小證據鏈。謝謝各位老師！`
+      }
+    ];
+
+    let currentSlide = 1;
+    const totalSlides = slides.length;
+    function renderSlide(index) {
+      if (index < 1 || index > totalSlides) return;
+      currentSlide = index;
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide - 1].render(currentSlide, totalSlides);
+      document.getElementById('currentIdx').textContent = String(currentSlide).padStart(2, '0');
+      document.getElementById('totalIdx').textContent = String(totalSlides).padStart(2, '0');
+      document.getElementById('progressBar').style.width = ((currentSlide / totalSlides) * 100) + '%';
+      document.getElementById('speakerContent').textContent = slides[currentSlide - 1].notes;
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(stage, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false });
+      }
+    }
+    function nextSlide() { if (currentSlide < totalSlides) renderSlide(currentSlide + 1); }
+    function prevSlide() { if (currentSlide > 1) renderSlide(currentSlide - 1); }
+    function toggleSpeakerNotes() { document.getElementById('speakerDrawer').classList.toggle('hidden'); }
+    function toggleFullScreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') { e.preventDefault(); nextSlide(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+      else if (e.key === 's' || e.key === 'S') { e.preventDefault(); toggleSpeakerNotes(); }
+      else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFullScreen(); }
+    });
+    window.addEventListener('DOMContentLoaded', () => { renderSlide(1); });
+  </script>
+</body>
+</html>

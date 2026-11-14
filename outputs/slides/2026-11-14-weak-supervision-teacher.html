@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>物件感知弱監督教師與幾何標籤生成 — 碩士論文專題簡報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; color: #0F172A; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .tech-bg { background-color: #FFFFFF; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; }
+    .ice-card { background: #F4F8FF; border: 1px solid #DBEAFE; border-radius: 12px; padding: 18px; }
+    .ice-card-blue { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 18px; }
+    .ice-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; }
+    .slide-canvas { aspect-ratio: 16 / 9; min-height: 560px; max-height: 680px; }
+    @media print { body { background: #FFFFFF !important; } .no-print { display: none !important; } .slide-canvas { aspect-ratio: auto !important; height: 100vh !important; page-break-after: always !important; box-shadow: none !important; border: none !important; } }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 md:p-6 tech-bg">
+
+  <header class="w-full max-w-6xl flex items-center justify-between py-2 border-b border-slate-200 no-print text-xs text-slate-500">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-blue-600 tracking-wider">NYCU CIVIL ENGINEERING</span>
+      <span class="text-slate-300">|</span>
+      <span>碩士論文專題簡報 01：弱監督教師與幾何標籤</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">研究生：張喬筑</span>
+      <span class="text-slate-400">指導教授：莊子毅 博士</span>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl flex-grow flex items-center justify-center my-4">
+    <div id="slideStage" class="w-full slide-canvas bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-300"></div>
+  </main>
+
+  <div id="speakerDrawer" class="w-full max-w-6xl bg-white border border-blue-200 rounded-xl p-4 shadow-lg mb-4 hidden no-print transition-all">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider mono">SPEAKER NOTES // 講者口白備忘錄 (按 S 鍵關閉)</span>
+      </div>
+      <span class="text-[11px] text-slate-400">專題 01</span>
+    </div>
+    <div id="speakerContent" class="text-xs text-slate-700 leading-relaxed max-h-32 overflow-y-auto"></div>
+  </div>
+
+  <footer class="w-full max-w-6xl flex items-center justify-between py-2 border-t border-slate-200 no-print text-xs text-slate-600">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1">
+        <button onclick="prevSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="上一頁 (←)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+        <button onclick="nextSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="下一頁 (→)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="mono font-semibold text-slate-800">
+        PAGE <span id="currentIdx" class="text-blue-600">01</span> / <span id="totalIdx">08</span>
+      </div>
+      <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 12.5%;"></div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 text-slate-500">
+      <button onclick="toggleSpeakerNotes()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">S</span><span>備忘錄</span></button>
+      <button onclick="toggleFullScreen()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">F</span><span>全螢幕</span></button>
+      <button onclick="window.print()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span>列印 PDF</span></button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = [
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">TOPIC 01 // WEAK SUPERVISION TEACHER</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-4">
+            <span class="ice-badge">碩士論文專題報告 01</span>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+              物件感知弱監督教師與幾何標籤生成<br>
+              <span class="text-blue-600">三維空間緩衝區與真實幾何核對實證</span>
+            </h1>
+            <p class="text-sm text-slate-600 max-w-3xl leading-relaxed">
+              針對 4D 雷達與光達的物理不對稱性，設計三維核心區、保護區與自適應距離雷達證據門檻，建立三態代理標籤（正例、負例、不確定點），並以 3D 側視核對徹底破除俯視二維投影的誤標假象。
+            </p>
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">空間緩衝機制</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">核心區 +0.2m ｜ 保護區 +0.8m</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">雷達證據自適應</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">隨距離平方平滑衰減 (式 3-1)</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">3D 幾何核對</div>
+                <div class="text-sm font-bold text-blue-600 mt-1">真實 3D 框內負代理為 0</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>國立陽明交通大學 土木工程學系碩士班</span>
+            <span class="mono">NYCU Civil Engineering</span>
+          </div>
+        `,
+        notes: `各位老師好，這份專題簡報專門聚焦於論文第三章的「物件感知弱監督教師與幾何標籤生成」。我們將詳細說明如何透過雙層空間緩衝區與三態標籤設計，避免跨模態監督中的負面監督陷阱，並呈現突破性的三維側視核對實證。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">01 // MOTIVATION & PHYSICS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">跨模態物理不對稱</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">跨模態幾何監督的物理盲點 (Kung et al., 2022)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <div class="text-xs font-bold text-rose-600 mono">PHYSICAL PITFALL 01</div>
+                <h3 class="text-sm font-bold text-slate-800">缺乏光達支持 ≠ 物理噪聲</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>毫米波雷達具備穿透塑膠保險桿、車窗以及穿透惡劣雨雪的物理能力。</li>
+                  <li>車體內部或被遮蔽面經常缺少光達反射點，若粗暴將其標為負例，將直接消滅雷達珍貴的穿透性回波。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-3">
+                <div class="text-xs font-bold text-amber-600 mono">PHYSICAL PITFALL 02</div>
+                <h3 class="text-sm font-bold text-slate-800">近鄰光達 ≠ 絕對有利目標定位</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>路側護欄、積雪或地面多路徑反射附近亦可能出現光達點。</li>
+                  <li>單純依賴單一距離門檻容易造成偽正例標註，必須結合目標類別的三維包圍框。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-900">
+              <strong>核心指導原則</strong>：明確區隔「可靠正例」、「可靠負例」與「不確定區域」，揚棄非黑即白的二元粗暴劃分。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 2.2 節 · 跨感測器幾何監督差異</span>
+            <span class="mono">Sensor Asymmetry in Weak Supervision</span>
+          </div>
+        `,
+        notes: `跨模態監督的第一個挑戰是物理不對稱。雷達能穿透車窗與保險桿，光達卻會被表面遮擋。如果把沒有光達支持的雷達點直接打成負例，就會把雷達最具穿透力的一面完全抹殺。因此，我們必須引入「不確定區」概念。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">02 // SENSOR CALIBRATION</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">空間對齊與判定</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">外參校正與局部坐標系 3D 空間框判定</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">CALIBRATION PROTOCOL</span>
+                <h3 class="text-sm font-bold text-slate-800">精準外參平移轉換</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  各場景讀取專屬標註對齊，平移向量為 <span class="mono font-semibold text-blue-700">(-2.54, 0.30, 0.70) m</span>。光達點與三維標註框中心各轉換一次至雷達坐標系，避免高度偏置重複疊加。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">3D ROTATED BOX INCLUSION</span>
+                <h3 class="text-sm font-bold text-slate-800">三維長寬高邊界包含判定</h3>
+                <div class="p-2 bg-white rounded border border-slate-200 text-center mono text-xs text-slate-800">
+                  $$\\begin{bmatrix} x_{\\text{loc}} \\\\ y_{\\text{loc}} \\\\ z_{\\text{loc}} \\end{bmatrix} = \\mathbf{R}(-\\theta_{\\text{yaw}}) \\begin{bmatrix} x - x_c \\\\ y - y_c \\\\ z - z_c \\end{bmatrix}$$
+                </div>
+                <div class="text-xs text-slate-600">
+                  當且僅當 $|x_{\\text{loc}}| \\le \\frac{L}{2} \\land |y_{\\text{loc}}| \\le \\frac{W}{2} \\land |z_{\\text{loc}}| \\le \\frac{H}{2}$ 時判為框內。
+                </div>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900">
+              ⚠️ <strong>警示</strong>：俯視圖 (x,y) 投影完全壓縮了高度維度，絕不能代替 z 軸高度檢查！
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.2 節 · 感測器校正與三維框判定</span>
+            <span class="mono">True 3D Spatial Geometry</span>
+          </div>
+        `,
+        notes: `我們在判定雷達點是否在車框內時，嚴格執行依偏航角旋轉的三維包含檢驗。這一點非常關鍵，因為後續我們會看到，很多在俯視圖上看似落在車內的負例，其實都在車頂上方或路面下。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // SPATIAL BUFFER</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">幾何設計 // 雙層緩衝</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">雙層空間緩衝區：核心區 (Core) 與保護區 (Guard)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3 border-l-4 border-l-blue-600">
+                <span class="text-xs font-bold text-blue-700 mono">CORE REGION (E) // 核心區</span>
+                <h3 class="text-sm font-bold text-slate-800">目標類別潛在回波圈定</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>由目標類別（轎車、大車）原始 3D 框向外擴張：</li>
+                  <li><strong>水平方向擴張 0.2 公尺</strong>、<strong>高度方向擴張 0.3 公尺</strong>。</li>
+                  <li>容納車體表面向外微幅發散的邊界回波，作為尋找可信正例的候選區域。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-3 border-l-4 border-l-amber-500">
+                <span class="text-xs font-bold text-amber-700 mono">GUARD REGION (G) // 保護區</span>
+                <h3 class="text-sm font-bold text-slate-800">負例禁止產生禁區</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li>針對場景中全部已標註物件向外更寬大擴張：</li>
+                  <li><strong>水平方向擴張 0.8 公尺</strong>、<strong>高度方向擴張 0.6 公尺</strong>。</li>
+                  <li><strong>鐵律</strong>：保護區以內的任何點，<strong>嚴禁產生負代理標籤</strong>！避免車框邊緣或相鄰物件點被誤殺。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 flex justify-between items-center">
+              <span>雙層緩衝區徹底隔離了「目標區域」與「背景噪聲區域」的邊界交界。</span>
+              <span class="mono text-blue-600 font-semibold">論文第 3.3.1 節</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.3.1 節 · 核心區與保護區</span>
+            <span class="mono">Dual-Zone Spatial Margin</span>
+          </div>
+        `,
+        notes: `我們設計了雙層緩衝機制：核心區向外小幅擴張 0.2 米，捕捉車體邊緣回波；外層更寬大的保護區向外擴張 0.8 米，作為負例禁區，確保車身邊界回波絕不被誤標為負例。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // ADAPTIVE THRESHOLD</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">動態證據 // 距離補償</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">自適應距離雷達證據點數門檻 (式 3-1)</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-7 ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">DISTANCE DECAY FORMULATION</span>
+                <div class="text-xs font-bold text-slate-800">自適應門檻公式</div>
+                <div class="p-3 bg-white rounded-lg border border-slate-200 mono text-xs text-center text-blue-800 font-bold">
+                  $$\\text{required}(r) = \\max\\left\\{1, \\left\\lceil b \\times \\text{clip}\\left(\\left(\\frac{30}{\\max(r,10^{-6})}\\right)^2, 0.4, 1.0\\right)\\right\\rceil\\right\\}$$
+                </div>
+                <div class="text-xs text-slate-600 leading-relaxed space-y-1">
+                  <div>· 基準點數 $b$：轎車 Sedan 設為 $5$ 點，大型車 Bus/Truck 設為 $10$ 點。</div>
+                  <div>· 在 $r \\le 30\\text{ m}$ 內要求完整 $b$ 點；超過 30 公尺隨距離平方反比衰減。</div>
+                </div>
+              </div>
+              <div class="col-span-5 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-blue-700 mono">PHYSICAL SIGNIFICANCE</span>
+                  <div class="text-xs font-bold text-slate-800">物理意義解讀</div>
+                  <p class="text-xs text-slate-600 leading-relaxed">
+                    雷達波束隨距離發散，遠處目標回波天然稀疏。最低保留比例 0.4（轎車遠距最低需 2 點、大車需 4 點），防止遠距真實車輛被誤判為無證據假目標。
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500 italic">
+              註：此距離調整已原生存在於 Version07 架構中，非後續追加。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.3.1 節 · 式 3-1 證據門檻</span>
+            <span class="mono">Range-Adaptive Evidence Threshold</span>
+          </div>
+        `,
+        notes: `針對遠處點雲天然稀疏的物理規律，我們設計了隨距離平方反比平滑衰減的證據門檻。這防止遠距車輛因點數減少而被直接誤判為無效目標，維持了遠距離弱監督的穩定性。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // PROXY LABELS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">標籤體系 // 表 3-2</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">三態代理標籤定義與損失目標</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="ice-card space-y-2 border-l-4 border-l-emerald-500">
+                <span class="text-xs font-bold text-emerald-700 mono">RELIABLE POSITIVE</span>
+                <div class="text-sm font-bold text-slate-800">可靠正例</div>
+                <div class="text-xs text-slate-600 space-y-1">
+                  <div>· 位於核心區 $E$ 且通過證據要求</div>
+                  <div>· 最小光達距離 $d_i \\le 0.5\\text{ m}$</div>
+                  <div class="font-bold text-emerald-700 pt-1">軟目標 $t_i = 0.95$ (參考值 1)</div>
+                </div>
+              </div>
+              <div class="ice-card space-y-2 border-l-4 border-l-rose-500">
+                <span class="text-xs font-bold text-rose-700 mono">RELIABLE NEGATIVE</span>
+                <div class="text-sm font-bold text-slate-800">可靠負例</div>
+                <div class="text-xs text-slate-600 space-y-1">
+                  <div>· 位於所有保護區 $G$ 之外</div>
+                  <div>· $d_i \\ge 1.2\\text{ m}$ 且點距 $\\le 80\\text{ m}$</div>
+                  <div class="font-bold text-rose-700 pt-1">軟目標 $t_i = 0.05$ (參考值 0)</div>
+                </div>
+              </div>
+              <div class="ice-card-blue space-y-2 border-l-4 border-l-amber-500">
+                <span class="text-xs font-bold text-amber-700 mono">IN-BOX UNCERTAIN</span>
+                <div class="text-sm font-bold text-slate-800">框內不確定點</div>
+                <div class="text-xs text-slate-600 space-y-1">
+                  <div>· 位於核心區 $E$ 但 $d_i > 0.5\\text{ m}$</div>
+                  <div>· 缺乏光達點直接支持</div>
+                  <div class="font-bold text-amber-700 pt-1">基準處理：完全忽略 (不計損失)</div>
+                </div>
+              </div>
+            </div>
+            <div class="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-700">
+              <strong>抽樣與訓練限制</strong>：每幀抽取最多 6,000 正例，負例目標約為正例 6 倍（512~12,000），總上限 2,000,000 點。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.3.2–3.3.3 節 · 表 3-2 標籤體系</span>
+            <span class="mono">Tri-state Proxy Supervision Protocol</span>
+          </div>
+        `,
+        notes: `表 3-2 明確界定了三態標籤。最重要的是第三類「框內不確定點」：位於車框內但沒有光達支持的點，基準模型選擇直接忽略、不計入損失，絕不將其誤標為負例，這為保護雷達弱回波構建了最關鍵的防線。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // 3D CASE AUDIT</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-3.5 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">突破性診斷 // 圖 4-2</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">三維標籤核對：破除俯視 1,759 個負代理的假象</h2>
+            </div>
+            <div class="grid grid-cols-12 gap-5 items-center">
+              <div class="col-span-6 space-y-3">
+                <div class="ice-card space-y-2">
+                  <span class="text-xs font-bold text-blue-700 mono">CASE AUDIT // 場景 3 幀 00031 物件 0</span>
+                  <div class="text-xs text-slate-700 leading-relaxed">
+                    在 BEV 俯視圖上，車框二維投影內充斥著看似高達 <strong>1,759 個負代理點</strong>，引起了標註規則崩潰的嚴重疑慮。
+                  </div>
+                </div>
+                <div class="p-2.5 bg-white rounded-lg border border-slate-200 text-xs text-slate-600">
+                  車框高度：$[-0.5, 3.5]\\text{ m}$ ｜ 保護高度：$[-1.1, 4.1]\\text{ m}$
+                </div>
+              </div>
+              <div class="col-span-6 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                    <tr><th class="p-2.5">範圍</th><th class="p-2.5 text-emerald-600">正代理</th><th class="p-2.5 text-rose-600">負代理</th><th class="p-2.5 text-slate-400">未判定</th></tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 text-slate-700">
+                    <tr><td class="p-2">僅原框 x-y 投影內</td><td class="p-2 mono">349</td><td class="p-2 mono text-rose-600 font-bold">1,759</td><td class="p-2 mono">2,591</td></tr>
+                    <tr class="bg-emerald-50/50 font-bold"><td class="p-2">真實三維原框內</td><td class="p-2 mono text-emerald-700">311</td><td class="p-2 mono text-emerald-700 font-bold">0</td><td class="p-2 mono">1,960</td></tr>
+                    <tr class="bg-blue-50/50"><td class="p-2">真實三維保護框內</td><td class="p-2 mono text-blue-700">349</td><td class="p-2 mono text-blue-700 font-bold">0</td><td class="p-2 mono">3,276</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 leading-relaxed">
+              <strong>實證震撼結論</strong>：1,759 個負代理 <strong>100% 位於保護框高度之外（車頂上方或路面下）</strong>！真實 3D 框內負代理為 0，證明弱監督三維保護規則完全健全，排除了標籤錯標的假象。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.4 節 · 表 4-3 與圖 4-2 幾何核對</span>
+            <span class="mono">True 3D vs. BEV Projection Audit</span>
+          </div>
+        `,
+        notes: `這項個案核對是本論文最漂亮的發現之一！俯視圖上看似車框內有 1,759 個負代理，但當我們加入側視高度檢查時證明，真實 3D 框內負代理完全為 0，全部都在車頂上方。這證明了我們的三維規則健全無誤，也警告自駕研究絕不能只看 BEV 投影。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // SUMMARY & BOUNDARIES</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">專題總結 // 解釋邊界</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">弱監督教師的成果總結與能力邊界</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-2">
+                <span class="text-xs font-bold text-blue-700 mono">SOLID ACHIEVEMENTS</span>
+                <h3 class="text-sm font-bold text-slate-800">已確立之扎實成果</h3>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <li>建立三態代理標籤（正/負/不確定），避免摧毀雷達穿透性。</li>
+                  <li>雙層空間緩衝區（核心區 + 保護區）健全運作。</li>
+                  <li>3D 幾何核對證實框內無負代理，徹底破除 BEV 誤標假象。</li>
+                </ul>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="text-xs font-bold text-amber-600 mono">SCIENTIFIC BOUNDARIES</span>
+                <h3 class="text-sm font-bold text-slate-800">恪守之科學邊界 (表 3-5)</h3>
+                <ul class="text-xs text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+                  <li>弱監督標籤源於幾何啟發規則，非人工逐點確定的物理真值。</li>
+                  <li>標籤無負例不保證神經網路推論一定給高分（受鄰域特徵影響）。</li>
+                  <li>必須經後續網路學習與下游 RTNH 配對實驗進行終端檢驗。</li>
+                </ul>
+              </div>
+            </div>
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 text-center font-semibold">
+              下一專題：雷達原生特徵工程（14D中心+10D鄰域）與局部可靠度神經網路架構 →
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 3.3 節與第 4.4 節總結</span>
+            <span class="mono">Weak Supervision Boundaries</span>
+          </div>
+        `,
+        notes: `總結本專題：我們建立了經 3D 側視核對證實的三態弱監督教師體系。但我們同樣恪守學術界線：弱標籤提供的是可信幾何排序，最終價值仍需由後續的神經網路與下游 RTNH 來評判。謝謝各位老師！`
+      }
+    ];
+
+    let currentSlide = 1;
+    const totalSlides = slides.length;
+
+    function renderSlide(index) {
+      if (index < 1 || index > totalSlides) return;
+      currentSlide = index;
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide - 1].render(currentSlide, totalSlides);
+      document.getElementById('currentIdx').textContent = String(currentSlide).padStart(2, '0');
+      document.getElementById('totalIdx').textContent = String(totalSlides).padStart(2, '0');
+      document.getElementById('progressBar').style.width = ((currentSlide / totalSlides) * 100) + '%';
+      document.getElementById('speakerContent').textContent = slides[currentSlide - 1].notes;
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(stage, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false });
+      }
+    }
+    function nextSlide() { if (currentSlide < totalSlides) renderSlide(currentSlide + 1); }
+    function prevSlide() { if (currentSlide > 1) renderSlide(currentSlide - 1); }
+    function toggleSpeakerNotes() { document.getElementById('speakerDrawer').classList.toggle('hidden'); }
+    function toggleFullScreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') { e.preventDefault(); nextSlide(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+      else if (e.key === 's' || e.key === 'S') { e.preventDefault(); toggleSpeakerNotes(); }
+      else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFullScreen(); }
+    });
+    window.addEventListener('DOMContentLoaded', () => { renderSlide(1); });
+  </script>
+</body>
+</html>

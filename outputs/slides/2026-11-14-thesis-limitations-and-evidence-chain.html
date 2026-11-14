@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研究限制、演算法改良與定稿最小證據鏈 — 碩士論文專題簡報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #F8FAFC; color: #0F172A; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .tech-bg { background-color: #FFFFFF; background-image: radial-gradient(#CBD5E1 1px, transparent 1px); background-size: 24px 24px; }
+    .ice-card { background: #F4F8FF; border: 1px solid #DBEAFE; border-radius: 12px; padding: 18px; }
+    .ice-card-blue { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 12px; padding: 18px; }
+    .ice-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; font-family: 'JetBrains Mono', monospace; border: 1px solid #BFDBFE; background: #EFF6FF; color: #1D4ED8; }
+    .ice-badge-alert { border: 1px solid #FED7AA; background: #FFF7ED; color: #C2410C; }
+    .slide-canvas { aspect-ratio: 16 / 9; min-height: 560px; max-height: 680px; }
+    @media print { body { background: #FFFFFF !important; } .no-print { display: none !important; } .slide-canvas { aspect-ratio: auto !important; height: 100vh !important; page-break-after: always !important; box-shadow: none !important; border: none !important; } }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 md:p-6 tech-bg">
+
+  <header class="w-full max-w-6xl flex items-center justify-between py-2 border-b border-slate-200 no-print text-xs text-slate-500">
+    <div class="flex items-center space-x-3">
+      <span class="font-bold text-blue-600 tracking-wider">NYCU CIVIL ENGINEERING</span>
+      <span class="text-slate-300">|</span>
+      <span>碩士論文專題簡報 05：限制、改良與證據鏈</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">研究生：張喬筑</span>
+      <span class="text-slate-400">指導教授：莊子毅 博士</span>
+    </div>
+  </header>
+
+  <main class="w-full max-w-6xl flex-grow flex items-center justify-center my-4">
+    <div id="slideStage" class="w-full slide-canvas bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-10 flex flex-col justify-between relative overflow-hidden transition-all duration-300"></div>
+  </main>
+
+  <div id="speakerDrawer" class="w-full max-w-6xl bg-white border border-blue-200 rounded-xl p-4 shadow-lg mb-4 hidden no-print transition-all">
+    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        <span class="text-xs font-bold text-slate-800 uppercase tracking-wider mono">SPEAKER NOTES // 講者口白備忘錄 (按 S 鍵關閉)</span>
+      </div>
+      <span class="text-[11px] text-slate-400">專題 05</span>
+    </div>
+    <div id="speakerContent" class="text-xs text-slate-700 leading-relaxed max-h-32 overflow-y-auto"></div>
+  </div>
+
+  <footer class="w-full max-w-6xl flex items-center justify-between py-2 border-t border-slate-200 no-print text-xs text-slate-600">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-1">
+        <button onclick="prevSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="上一頁 (←)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></button>
+        <button onclick="nextSlide()" class="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 transition" title="下一頁 (→)"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="mono font-semibold text-slate-800">
+        PAGE <span id="currentIdx" class="text-blue-600">01</span> / <span id="totalIdx">08</span>
+      </div>
+      <div class="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 12.5%;"></div>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 text-slate-500">
+      <button onclick="toggleSpeakerNotes()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">S</span><span>備忘錄</span></button>
+      <button onclick="toggleFullScreen()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span class="mono font-bold text-[10px] bg-slate-100 px-1 rounded">F</span><span>全螢幕</span></button>
+      <button onclick="window.print()" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 flex items-center space-x-1"><span>列印 PDF</span></button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = [
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">TOPIC 05 // LIMITATIONS & ROADMAP</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="my-auto space-y-4">
+            <span class="ice-badge">碩士論文專題報告 05</span>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+              研究限制、演算法改良與定稿最小證據鏈<br>
+              <span class="text-blue-600">7 大研究限制、Version08 改良藍圖與口試定稿驗收</span>
+            </h1>
+            <p class="text-sm text-slate-600 max-w-3xl leading-relaxed">
+              客觀總結現行快照下成立之核心結論，公開審視 7 大研究邊界；規劃 Version08 平台式映射與損失加權改良方案；並依表 4-6 建立定稿所需的六大優先順序與 15 場景擴充切分協定。
+            </p>
+            <div class="grid grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">學術邊界審視</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">公開揭露 7 大客觀限制</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">Version08 藍圖</div>
+                <div class="text-sm font-bold text-slate-800 mt-1">平台式映射 + 有界加權</div>
+              </div>
+              <div class="ice-card py-3">
+                <div class="text-[11px] text-slate-400 uppercase mono">最小證據鏈</div>
+                <div class="text-sm font-bold text-blue-600 mt-1">表 4-6 六大優先步驟閉環</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>國立陽明交通大學 土木工程學系碩士班</span>
+            <span class="mono">Roadmap to Thesis Defense</span>
+          </div>
+        `,
+        notes: `各位老師好，這是我們碩士論文專題的最後一篇——「研究限制、演算法改良與定稿最小證據鏈」。我們將客觀審視目前的 7 大研究邊界，並呈現為論文定稿與學位口試所制定的最小證據鏈與工作優先順序。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">01 // SOLID CLAIMS</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">現行快照定論</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">目前快照下可成立之核心結論 (論文 5.1 節)</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-5">
+              <div class="ice-card space-y-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center mono text-sm">01</div>
+                <h3 class="text-sm font-bold text-slate-800">弱監督純雷達框架可行</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  僅依賴雷達原生 14D 中心 + 10D 鄰域特徵，模型能在固定代理監督下形成非隨機排序，代理 AP 達到 68.46%。
+                </p>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center mono text-sm">02</div>
+                <h3 class="text-sm font-bold text-slate-800">3D 保護幾何規則驗證無誤</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  三維側視核對證實，俯視 1,759 個負代理全數在車框外，真實 3D 框內負代理為 0，排除教師錯標假象。
+                </p>
+              </div>
+              <div class="ice-card space-y-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center mono text-sm">03</div>
+                <h3 class="text-sm font-bold text-slate-800">精準鎖定失敗診斷靶心</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  確認了都卜勒干擾、21.9:1 失衡與 60–80m 遠距缺乏光達支持點功率衰退至 82.68% 之核心瓶頸。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900 flex justify-between items-center">
+              <span><strong>定稿原則</strong>：最終偵測增益須待獨立場景三種子 RTNH 跑完後撰寫，不預先宣稱「全面提升」。</span>
+              <span class="mono font-semibold">第 5.1 節結論</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 5.1 節 · 目前可成立結論</span>
+            <span class="mono">Defensible Snapshot Claims</span>
+          </div>
+        `,
+        notes: `在目前快照下，我們確立了三大堅實結論：弱監督架構成立、3D 幾何規則無誤、精準定位了都卜勒干擾與大車遠距衰退的真因。我們絕不提前吹噓尚未完成的最終偵測率。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">02 // LIMITATIONS PART 1</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">自我審視 // 邊界 (上篇)</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">本研究面臨的 7 大限制 (限制 1–4)</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-xs">
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-rose-600 mono">LIMITATION 01</span>
+                <h3 class="text-sm font-bold text-slate-800">監督幾何假設擬合</h3>
+                <p class="text-slate-600 leading-relaxed">
+                  監督與部分評估共用幾何假設，存在模型過擬合代理規則而非感知任務本身的可能。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-rose-600 mono">LIMITATION 02</span>
+                <h3 class="text-sm font-bold text-slate-800">單一開發場景偏誤</h3>
+                <p class="text-slate-600 leading-relaxed">
+                  場景 3 主導選模，增加選模偏差；歷史場景曝光限制了完全獨立盲測的主張。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-amber-600 mono">LIMITATION 03</span>
+                <h3 class="text-sm font-bold text-slate-800">影格高度相關性</h3>
+                <p class="text-slate-600 leading-relaxed">
+                  連續影格中同車重複計數，獨立車輛與場景數少於表面標註數。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-amber-600 mono">LIMITATION 04</span>
+                <h3 class="text-sm font-bold text-slate-800">ROI 與可見度受限</h3>
+                <p class="text-slate-600 leading-relaxed">
+                  現行大型車遠距分析仍受限於 72 米 ROI 邊界與光達視角遮蔽。
+                </p>
+              </div>
+            </div>
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded text-xs text-slate-500">
+              誠實列出研究邊界，是確保後續定稿結論具備高度公信力與可信度的基石。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 5.2 節 · 限制 1–4</span>
+            <span class="mono">Methodological Limitations</span>
+          </div>
+        `,
+        notes: `我們在第五章誠實列出了七大限制。前半部分包括幾何假設共用、單一開發場景帶來的選模偏差、影格之間的重複性、以及 72 米 ROI 邊界。承認這些限制是嚴謹治學的基石。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">03 // LIMITATIONS PART 2</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge ice-badge-alert">自我審視 // 邊界 (下篇)</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">本研究面臨的 7 大限制 (限制 5–7)</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-4 text-xs">
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-rose-600 mono">LIMITATION 05</span>
+                <h3 class="text-sm font-bold text-slate-800">功率歸零未刪點</h3>
+                <p class="text-slate-600 leading-relaxed">
+                  維持 150,000 列與原坐標，不帶來推論加速或記憶體下降，不可直接援引稀疏化的算力節省。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-rose-600 mono">LIMITATION 06</span>
+                <h3 class="text-sm font-bold text-slate-800">外部對照未全鏈跑完</h3>
+                <p class="text-slate-600 leading-relaxed">
+                  受限於單張 RTX 4080 (16GB VRAM)，CORENet、L4DR 等外部方法的公平重現仍在進行中。
+                </p>
+              </div>
+              <div class="ice-card space-y-2">
+                <span class="font-bold text-amber-600 mono">LIMITATION 07</span>
+                <h3 class="text-sm font-bold text-slate-800">歷史紀錄雜湊不全</h3>
+                <p class="text-slate-600 leading-relaxed">
+                  舊版歷史紀錄缺乏部分完整環境識別碼，不可直接混入正式主表。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg text-xs text-slate-700">
+              邊界承諾：所有限制均將作為定稿前提，確保研究宣稱與客觀證據完全匹配。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 5.2 節 · 限制 5–7</span>
+            <span class="mono">Resource & Integrity Boundaries</span>
+          </div>
+        `,
+        notes: `後半部分限制包括：功率歸零並不節省算力、外部對照方法在單卡 16GB 顯存上的重現門檻、以及歷史紀錄缺少部分雜湊。我們堅持把這些邊界公開，確保未來的定稿結論站得住腳。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">04 // VERSION08 ROADMAP</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">演算法改良 // VERSION08</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">後續演算法改良藍圖 (Version08 規劃)</h2>
+            </div>
+            <div class="grid grid-cols-3 gap-5">
+              <div class="ice-card-blue space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">UPGRADE 01 // 平台式功率映射</span>
+                <h3 class="text-sm font-bold text-slate-800">可信區無損保留平台</h3>
+                <div class="p-2 bg-white rounded border border-blue-200 mono text-xs text-center">
+                  $$w(s) = \\alpha + (1-\\alpha)\\text{clip}(s/\\tau, 0, 1)$$
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  達到門檻 $\\tau$ 後保留 100% 滿額功率，徹底消除軟式抑制對大車車體訊號的折損。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">UPGRADE 02 // 損失函數動態重加權</span>
+                <h3 class="text-sm font-bold text-slate-800">EQL v2 與 3D-DIoU 空間回歸</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  引入 <code>EQL v2 (CVPR 2021)</code> 門控消除 21.9:1 負梯度窒息；引入 <code>3D-DIoU (AAAI 2020)</code> 約束三維中心點，將 BEV 增益轉化為 3D AP。
+                </p>
+              </div>
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">UPGRADE 03 // 輕量化特徵轉移</span>
+                <h3 class="text-sm font-bold text-slate-800">輔助前景頭與快取蒸餾</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  評估共用骨幹下的輔助預測；若採用特徵蒸餾，先離線快取光達教師分數，突破 16GB 顯存限制。
+                </p>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded text-xs text-slate-700">
+              優先順序：先映射修復 $\\to$ 再加權平衡 $\\to$ 最後才增網路容量。
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 5.3 節 · 演算法改良藍圖</span>
+            <span class="mono">Version08 Algorithm Blueprint</span>
+          </div>
+        `,
+        notes: `為了解決大車衰退與都卜勒干擾，Version08 規劃了三大改良：平台式滿額映射徹底解決功率折損、損失函數動態重加權扭轉 21.9 比 1 失衡、以及快取式特徵蒸餾。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">05 // EVIDENCE CHAIN PART 1</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">定稿驗收 // 表 4-6</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">定稿最小證據鏈：核心基線與逐物件診斷 (步驟 1–3)</h2>
+            </div>
+            <div class="space-y-3 text-xs">
+              <div class="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-blue-800 text-sm mono">PRIORITY 01 // 鎖定正式候選 (進行中)</div>
+                  <div class="text-slate-700 mt-1">完成 08–12 階段，正式鎖定模型／策略／資料；不重跑已驗證訓練。</div>
+                </div>
+                <span class="mono text-blue-700 font-semibold">回答：最後選到什麼？是否可重現？</span>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900 text-sm mono">PRIORITY 02 // 跑通 RTNH 全鏈介面 (即刻啟動)</div>
+                  <div class="text-slate-700 mt-1">完整 RTNH 介面：原始、硬式、軟式、強度對照正式三維偵測成績。</div>
+                </div>
+                <span class="mono text-slate-600 font-semibold">回答：學習與功率修改是否改善找車？</span>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900 text-sm mono">PRIORITY 03 // 逐物件漏檢配對分析</div>
+                  <div class="text-slate-700 mt-1">逐物件配對檢驗漏檢／誤檢／框偏差，依車型與距離分層。</div>
+                </div>
+                <span class="mono text-slate-600 font-semibold">回答：大車退步具體發生在哪個環節？</span>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500">按部就班推進，避免同時改動過多變數而無法解釋改善來源。</div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.7 節 · 表 4-6 前三步驟</span>
+            <span class="mono">Baseline & Diagnostic Auditing</span>
+          </div>
+        `,
+        notes: `我們制定了定稿的「最小證據鏈」。前三步首先鎖定模型、跑通 RTNH 四組配對重訓基準，接著進行逐物件漏檢比對，用扎實數據定位大車退步環節。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">06 // EVIDENCE CHAIN PART 2</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">定稿驗收 // 表 4-6</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">定稿最小證據鏈：消融、對照與盲測驗收 (步驟 4–6)</h2>
+            </div>
+            <div class="space-y-3 text-xs">
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900 text-sm mono">PRIORITY 04 // Version08 改良消融實驗</div>
+                  <div class="text-slate-700 mt-1">原版 vs 僅映射 vs 僅監督 vs 兩者。</div>
+                </div>
+                <span class="mono text-slate-600 font-semibold">回答：改善來源及交互作用為何？</span>
+              </div>
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-slate-900 text-sm mono">PRIORITY 05 // 一項可負擔外部方法</div>
+                  <div class="text-slate-700 mt-1">相同資料、感測器與預算下的改編對照（如 FAD 改編）。</div>
+                </div>
+                <span class="mono text-slate-600 font-semibold">回答：是否超越合理替代方法？</span>
+              </div>
+              <div class="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
+                <div>
+                  <div class="font-bold text-emerald-800 text-sm mono">PRIORITY 06 // 獨立未見場景盲測驗證</div>
+                  <div class="text-emerald-900 mt-1">最終少數方案三種子未調參場景驗證，精確測量推論時間與顯存成本。</div>
+                </div>
+                <span class="mono text-emerald-700 font-semibold">回答：改善是否穩定、可泛化且可負擔？</span>
+              </div>
+            </div>
+            <div class="text-xs text-slate-500">以無懈可擊的閉環證據鏈為碩士學位論文定稿。</div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.7 節 · 表 4-6 後三步驟</span>
+            <span class="mono">Ablation & Blind Generalization</span>
+          </div>
+        `,
+        notes: `後三步則進行 Version08 的單一變量消融、外部改編對照，以及在完全獨立的盲測場景上完成三種子驗收與資源消耗測量，形成閉環證據鏈。`
+      },
+      {
+        render: (curr, total) => `
+          <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-100 pb-2">
+            <span class="mono font-semibold text-blue-600">07 // SUMMARY & DEFENSE</span>
+            <span class="mono">${curr} / ${total}</span>
+          </div>
+          <div class="space-y-4 my-auto">
+            <div>
+              <span class="ice-badge">資料擴充 // 口試總結</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">15 場景資料擴充協定與論文總結</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-5">
+              <div class="ice-card space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">DATASET EXPANSION PROTOCOL</span>
+                <h3 class="text-sm font-bold text-slate-800">場景 9 備妥與 15 場景隔離</h3>
+                <ul class="text-xs text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
+                  <li><strong>場景 9 備妥</strong>：已完成 833 個有標註影格（共 1,666 檔稀疏資料），通過有限值與雜湊校驗。</li>
+                  <li><strong>15 場景隔離協定</strong>：最多 15 場景，<strong>嚴格保留 3 個未參與選模的獨立場景作為測試集</strong>，其餘 12 個作為開發池。</li>
+                  <li>嚴禁使用測試集挑選重訓結果，維持科學純潔性。</li>
+                </ul>
+              </div>
+              <div class="ice-card-blue space-y-3">
+                <span class="text-xs font-bold text-blue-700 mono">THESIS VALUE & ACKNOWLEDGEMENT</span>
+                <h3 class="text-sm font-bold text-slate-800">論文核心價值與答辯承諾</h3>
+                <p class="text-xs text-slate-700 leading-relaxed">
+                  提供不依賴推論端光達的可插入式雷達功率前處理；建立能辨識「背景變乾淨但車體受損」的客觀評估體系。以最扎實的數據完成學位論文！
+                </p>
+                <div class="pt-2 border-t border-blue-200 text-xs font-bold text-blue-800">
+                  感謝指導教授 莊子毅 博士的悉心指導，請各位委員不吝指正！
+                </div>
+              </div>
+            </div>
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600 text-center mono">
+              NYCU Civil Engineering · Master Thesis Presentation Finished
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-xs text-slate-400 border-t border-slate-100 pt-2">
+            <span>論文第 4.7 節與第五章總結</span>
+            <span class="mono">Master Thesis Defense Conclusion</span>
+          </div>
+        `,
+        notes: `我們已備妥場景 9 的 833 幀資料，並規劃了嚴格的 15 場景盲測切分協定。我們將以最客觀、最嚴謹的科學證據鏈完成碩士學位論文。感謝各位老師的悉心指導！`
+      }
+    ];
+
+    let currentSlide = 1;
+    const totalSlides = slides.length;
+    function renderSlide(index) {
+      if (index < 1 || index > totalSlides) return;
+      currentSlide = index;
+      const stage = document.getElementById('slideStage');
+      stage.innerHTML = slides[currentSlide - 1].render(currentSlide, totalSlides);
+      document.getElementById('currentIdx').textContent = String(currentSlide).padStart(2, '0');
+      document.getElementById('totalIdx').textContent = String(totalSlides).padStart(2, '0');
+      document.getElementById('progressBar').style.width = ((currentSlide / totalSlides) * 100) + '%';
+      document.getElementById('speakerContent').textContent = slides[currentSlide - 1].notes;
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(stage, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false });
+      }
+    }
+    function nextSlide() { if (currentSlide < totalSlides) renderSlide(currentSlide + 1); }
+    function prevSlide() { if (currentSlide > 1) renderSlide(currentSlide - 1); }
+    function toggleSpeakerNotes() { document.getElementById('speakerDrawer').classList.toggle('hidden'); }
+    function toggleFullScreen() { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else { if (document.exitFullscreen) document.exitFullscreen(); } }
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'Space') { e.preventDefault(); nextSlide(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+      else if (e.key === 's' || e.key === 'S') { e.preventDefault(); toggleSpeakerNotes(); }
+      else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); toggleFullScreen(); }
+    });
+    window.addEventListener('DOMContentLoaded', () => { renderSlide(1); });
+  </script>
+</body>
+</html>
