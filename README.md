@@ -65,16 +65,6 @@ LLM_WIKI/
 
 ---
 
-## 🌐 啟用 GitHub Pages 線上瀏覽
-
-若您將本專案推送到 GitHub，可透過 GitHub Pages 免費發布為線上簡報網站：
-1. 進入 GitHub 儲存庫頁面，點選 **Settings**。
-2. 在左側選單點選 **Pages**。
-3. 在 **Build and deployment** > **Branch** 選擇 `main`，資料夾選擇 `/ (root)`，並點選 **Save**。
-4. 稍等約 1 分鐘後，即可透過 `https://<你的 GitHub 帳號>.github.io/<儲存庫名稱>/` 直接在瀏覽器中線上開啟全部 10 份研究簡報與全景門戶！
-
----
-
 ## 📜 操作日誌與版本控制
 
 所有資料攝入（Ingest）、查詢沉澱（Query）與健康維護（Lint）均紀錄於 [`log.md`](log.md)，遵守嚴格的不可變追加原則。
